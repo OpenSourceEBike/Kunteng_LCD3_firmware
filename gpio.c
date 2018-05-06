@@ -23,6 +23,10 @@ void gpio_init (void)
   GPIO_Init(LCD3_ENABLE_BACKLIGHT_POWER__PORT,
             LCD3_ENABLE_BACKLIGHT_POWER__PIN,
             GPIO_MODE_OUT_PP_LOW_FAST);
+
+  GPIO_Init(GPIOB,
+      GPIO_PIN_4,
+      GPIO_MODE_OUT_PP_LOW_FAST);
 }
 
 

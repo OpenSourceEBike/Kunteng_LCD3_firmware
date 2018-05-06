@@ -17,12 +17,18 @@
 #define CMD_SYS_EN   1   // SYS EN     (0000-0001-X) Turn on  system oscillator
 #define CMD_LCD_OFF  2   // LCD OFF    (0000-0010-X) Turn off LCD display [Default]
 #define CMD_LCD_ON   3   // LCD ON     (0000-0011-X) Turn on  LCD display
-#define CMD_RC_INT   16  // RC INT     (0001-10XX-X) System clock source, on-chip RC oscillator
+#define CMD_RC_INT   24  // RC INT     (0001-10XX-X) System clock source, on-chip RC oscillator
 
 void ht1622_send_bits(uint16_t data, uint8_t bits);
 void ht1622_send_command(uint8_t command);
 void ht1622_write_data(uint8_t address, uint16_t data, uint8_t bits);
 
+// Init HT1622:
+// 1. select system clock source
+// 2. system enable
+// 3. set the display data in data memory
+// 4. turn on the LCD display
+// 5. update the display data in data memory.
 void ht1622_init (void)
 {
   GPIO_Init(LCD3_HT1622_CS__PORT,
@@ -42,17 +48,14 @@ void ht1622_init (void)
             GPIO_MODE_IN_PU_NO_IT);
 
   delay_8us (6250); // 50ms
-
+//  ht1622_send_command(CMD_RC_INT);
+  delay_8us (6250); // 50ms
   ht1622_send_command(CMD_SYS_EN);
-  ht1622_send_command(CMD_RC_INT);
-//  ht1622_send_command(CMD_LCD_OFF);
-  ht1622_send_command(CMD_LCD_ON);
-
-  delay_8us(65535); // ~500ms
-
+  delay_8us (6250); // 50ms
   ht1622_enable_all_segments(1);
-
-  delay_8us(65535); // ~500ms
+  delay_8us (6250); // 50ms
+  ht1622_send_command(CMD_LCD_ON);
+  delay_8us (6250); // 50ms
 }
 
 void ht1622_send_bits(uint16_t data, uint8_t bits)
@@ -82,7 +85,7 @@ void ht1622_send_command(uint8_t command)
   GPIO_WriteLow(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
   ht1622_send_bits(4, 3);
   ht1622_send_bits(command, 8);
-//  ht1622_send_bits(1, 1);
+  ht1622_send_bits(1, 1);
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 

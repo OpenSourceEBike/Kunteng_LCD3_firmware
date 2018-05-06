@@ -13,6 +13,7 @@
 #include "timers.h"
 #include "adc.h"
 #include "ht1622.h"
+#include "uart.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //// Functions prototypes
@@ -40,9 +41,24 @@ int main (void);
 /////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+// UART2 Receive interrupt
+//void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+// This is the interrupt that happesn when UART2 receives data.
+//void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
+//{
+//  if(UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET)
+//  {
+////    ui8_byte_received = UART2_ReceiveData8 ();
+//  }
+//}
+
 int main (void)
 {
-  static uint16_t ui16_temp;
+  volatile static uint16_t ui16_temp;
   static uint8_t ui8_temp;
 
   //set clock at the max 16MHz
@@ -50,32 +66,49 @@ int main (void)
 
   gpio_init ();
   timer2_init ();
-  adc_init ();
-  ht1622_init ();
+  uart2_init ();
+//  adc_init ();
 
-  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
-  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
+//  GPIO_WriteHigh(GPIOB, GPIO_PIN_4);
+
+//  ht1622_init ();
+//
+//  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
+//  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
 
   while (1)
   {
-    ui16_temp = ui16_adc_read_battery_voltage_10b ();
+//    ui16_temp = ui16_adc_read_ain4_10b ();
 
-    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
-    if (ui16_temp == 0)
-    {
-      if (ui8_temp)
-      {
-        ht1622_enable_all_segments (1);
-        ui8_temp = 0;
-      }
-      else
-      {
-        ht1622_enable_all_segments (0);
-        ui8_temp = 1;
-      }
+//    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
 
-      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
-    }
+//    while (ui16_temp == 0)
+//    {
+//      ui16_temp = UART2_ReceiveData8();
+//    }
+//    ui16_temp = UART2_ReceiveData8();
+
+    /* Loop until the Read data register flag is SET */
+//    while (UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET) ;
+    printf("%d\n", UART2_ReceiveData8());
+    delay_8us (1000);
+
+
+//    if (ui16_temp == 0)
+//    {
+//      if (ui8_temp)
+//      {
+//        ht1622_enable_all_segments (1);
+//        ui8_temp = 0;
+//      }
+//      else
+//      {
+//        ht1622_enable_all_segments (0);
+//        ui8_temp = 1;
+//      }
+//
+//      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
+//    }
   }
 
   return 0;
