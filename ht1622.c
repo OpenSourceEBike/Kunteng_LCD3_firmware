@@ -45,12 +45,12 @@ void ht1622_init (void)
 
   ht1622_send_command(CMD_SYS_EN);
   ht1622_send_command(CMD_RC_INT);
-  ht1622_send_command(CMD_LCD_OFF);
+//  ht1622_send_command(CMD_LCD_OFF);
   ht1622_send_command(CMD_LCD_ON);
 
   delay_8us(65535); // ~500ms
 
-  ht1622_enable_all_segments(0);
+  ht1622_enable_all_segments(1);
 
   delay_8us(65535); // ~500ms
 }
@@ -82,7 +82,7 @@ void ht1622_send_command(uint8_t command)
   GPIO_WriteLow(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
   ht1622_send_bits(4, 3);
   ht1622_send_bits(command, 8);
-  ht1622_send_bits(1, 1);
+//  ht1622_send_bits(1, 1);
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
