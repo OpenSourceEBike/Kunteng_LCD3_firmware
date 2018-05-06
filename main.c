@@ -1,5 +1,5 @@
 /*
- * LCD3 firmware/
+ * LCD3 firmware
  *
  * Copyright (C) Casainho, 2018.
  *
@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include "stm8s.h"
 #include "gpio.h"
+#include "timers.h"
+#include "adc.h"
+#include "ht1622.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //// Functions prototypes
@@ -39,24 +42,39 @@ int main (void);
 
 int main (void)
 {
+  static uint16_t ui16_temp;
+  static uint8_t ui8_temp;
+
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
 
   gpio_init ();
+  timer2_init ();
+  adc_init ();
+  ht1622_init ();
 
-  GPIO_Init(GPIOA,
-            GPIO_PIN_2,
-            GPIO_MODE_OUT_PP_LOW_FAST);
-
-  GPIO_WriteHigh(GPIOA, GPIO_PIN_2);
+  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
+  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
 
   while (1)
   {
-    if (!GPIO_ReadInputPin(LCD_BUTTON_DOWN__PORT, LCD_BUTTON_DOWN__PIN))
-    {
-      GPIO_WriteReverse(LCD_BACKLIGHT__PORT, LCD_BACKLIGHT__PIN);
+    ui16_temp = ui16_adc_read_battery_voltage_10b ();
 
-      while (!GPIO_ReadInputPin(LCD_BUTTON_DOWN__PORT, LCD_BUTTON_DOWN__PIN)) ;
+    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
+    if (ui16_temp == 0)
+    {
+      if (ui8_temp)
+      {
+        ht1622_enable_all_segments (1);
+        ui8_temp = 0;
+      }
+      else
+      {
+        ht1622_enable_all_segments (0);
+        ui8_temp = 1;
+      }
+
+      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
     }
   }
 

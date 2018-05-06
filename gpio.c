@@ -1,5 +1,5 @@
 /*
- * LCD3 firmware/
+ * LCD3 firmware
  *
  * Copyright (C) Casainho, 2018.
  *
@@ -12,12 +12,16 @@
 
 void gpio_init (void)
 {
-  GPIO_Init(LCD_BUTTON_DOWN__PORT,
-            LCD_BUTTON_DOWN__PIN,
+  GPIO_Init(LCD3_BUTTON_DOWN__PORT,
+            LCD3_BUTTON_DOWN__PIN,
             GPIO_MODE_IN_PU_NO_IT);
 
-  GPIO_Init(LCD_BACKLIGHT__PORT,
-            LCD_BACKLIGHT__PIN,
+  GPIO_Init(LCD3_ENABLE_BACKLIGHT__PORT,
+            LCD3_ENABLE_BACKLIGHT__PIN,
+            GPIO_MODE_OUT_PP_LOW_FAST);
+
+  GPIO_Init(LCD3_ENABLE_BACKLIGHT_POWER__PORT,
+            LCD3_ENABLE_BACKLIGHT_POWER__PIN,
             GPIO_MODE_OUT_PP_LOW_FAST);
 }
 

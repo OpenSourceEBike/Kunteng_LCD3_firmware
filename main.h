@@ -1,5 +1,5 @@
 /*
- * LCD3 firmware/
+ * LCD3 firmware
  *
  * Copyright (C) Casainho, 2018.
  *
