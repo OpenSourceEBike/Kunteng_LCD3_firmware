@@ -69,46 +69,37 @@ int main (void)
   uart2_init ();
 //  adc_init ();
 
-//  GPIO_WriteHigh(GPIOB, GPIO_PIN_4);
+  GPIO_WriteHigh(GPIOB, GPIO_PIN_4); // enable VDD to HT1622 ??
 
-//  ht1622_init ();
+  GPIO_WriteHigh(GPIOE, GPIO_PIN_3);
+
+  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
+  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
+
+  ht1622_init ();
 //
-//  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
-//  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
+
 
   while (1)
   {
 //    ui16_temp = ui16_adc_read_ain4_10b ();
 
-//    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
+    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
+    if (ui16_temp == 0)
+    {
+      if (ui8_temp)
+      {
+        ht1622_enable_all_segments (1);
+        ui8_temp = 0;
+      }
+      else
+      {
+        ht1622_enable_all_segments (0);
+        ui8_temp = 1;
+      }
 
-//    while (ui16_temp == 0)
-//    {
-//      ui16_temp = UART2_ReceiveData8();
-//    }
-//    ui16_temp = UART2_ReceiveData8();
-
-    /* Loop until the Read data register flag is SET */
-//    while (UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET) ;
-    printf("%d\n", UART2_ReceiveData8());
-    delay_8us (1000);
-
-
-//    if (ui16_temp == 0)
-//    {
-//      if (ui8_temp)
-//      {
-//        ht1622_enable_all_segments (1);
-//        ui8_temp = 0;
-//      }
-//      else
-//      {
-//        ht1622_enable_all_segments (0);
-//        ui8_temp = 1;
-//      }
-//
-//      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
-//    }
+      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
+    }
   }
 
   return 0;

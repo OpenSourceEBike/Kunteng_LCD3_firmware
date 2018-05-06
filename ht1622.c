@@ -33,29 +33,39 @@ void ht1622_init (void)
 {
   GPIO_Init(LCD3_HT1622_CS__PORT,
             LCD3_HT1622_CS__PIN,
-            GPIO_MODE_OUT_PP_HIGH_FAST);
+            GPIO_MODE_OUT_OD_LOW_FAST);
+  GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 
   GPIO_Init(LCD3_HT1622_WRITE__PORT,
             LCD3_HT1622_WRITE__PIN,
-            GPIO_MODE_OUT_PP_HIGH_FAST);
+            GPIO_MODE_OUT_OD_LOW_FAST);
+  GPIO_WriteHigh(LCD3_HT1622_WRITE__PORT, LCD3_HT1622_WRITE__PIN);
 
   GPIO_Init(LCD3_HT1622_DATA__PORT,
             LCD3_HT1622_DATA__PIN,
-            GPIO_MODE_OUT_PP_HIGH_FAST);
+            GPIO_MODE_OUT_OD_LOW_FAST);
+  GPIO_WriteHigh(LCD3_HT1622_DATA__PORT, LCD3_HT1622_DATA__PIN);
 
   GPIO_Init(LCD3_HT1622_READ__PORT,
             LCD3_HT1622_READ__PIN,
             GPIO_MODE_IN_PU_NO_IT);
 
-  delay_8us (6250); // 50ms
-//  ht1622_send_command(CMD_RC_INT);
-  delay_8us (6250); // 50ms
+  // reset
+  GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
+  GPIO_WriteHigh(LCD3_HT1622_WRITE__PORT, LCD3_HT1622_WRITE__PIN);
+  GPIO_WriteHigh(LCD3_HT1622_DATA__PORT, LCD3_HT1622_DATA__PIN);
+  GPIO_WriteLow(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
+  GPIO_WriteLow(LCD3_HT1622_WRITE__PORT, LCD3_HT1622_WRITE__PIN);
+
+  delay_8us (100); // 50ms
+  ht1622_send_command(CMD_RC_INT);
+  delay_8us (100); // 50ms
   ht1622_send_command(CMD_SYS_EN);
-  delay_8us (6250); // 50ms
+  delay_8us (100); // 50ms
   ht1622_enable_all_segments(1);
-  delay_8us (6250); // 50ms
+  delay_8us (100); // 50ms
   ht1622_send_command(CMD_LCD_ON);
-  delay_8us (6250); // 50ms
+  delay_8us (100); // 50ms
 }
 
 void ht1622_send_bits(uint16_t data, uint8_t bits)
@@ -67,14 +77,14 @@ void ht1622_send_bits(uint16_t data, uint8_t bits)
   for (uint8_t i = bits; i > 0; i--)
   {
     GPIO_WriteLow(LCD3_HT1622_WRITE__PORT, LCD3_HT1622_WRITE__PIN);
-    delay_8us (1); // 8 us
+    delay_8us (4); // 8 us
 
     if (data && ui16_mask) { GPIO_WriteHigh(LCD3_HT1622_DATA__PORT, LCD3_HT1622_DATA__PIN); }
     else { GPIO_WriteLow(LCD3_HT1622_DATA__PORT, LCD3_HT1622_DATA__PIN); }
-    delay_8us (1); // 8 us
+    delay_8us (4); // 8 us
 
     GPIO_WriteHigh(LCD3_HT1622_WRITE__PORT, LCD3_HT1622_WRITE__PIN);
-    delay_8us (1); // 8 us
+    delay_8us (4); // 8 us
 
     data <<= 1;
   }
@@ -105,5 +115,5 @@ void ht1622_enable_all_segments(uint8_t state)
     ht1622_write_data(address, (state ? 0xff : 0x00), 4);
   }
 
-  delay_8us(65535); // ~500ms
+  delay_8us(100); // ~500ms
 }

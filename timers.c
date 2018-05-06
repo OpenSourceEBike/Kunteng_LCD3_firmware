@@ -38,10 +38,7 @@ void timer2_init (void)
 void delay_8us (uint16_t us8)
 {
   uint16_t ui16_counter;
-//
-//  ui16_counter = TIM2_GetCounter () + us8;
-//  while (TIM2_GetCounter () < ui16_counter) ; // wait here until time passes
 
-  ui16_counter = TIM2_GetCounter () + 1000;
-  while (TIM2_GetCounter () < ui16_counter) ; // delay ~10ms
+  ui16_counter = TIM2_GetCounter () + us8;
+  while (TIM2_GetCounter () < ui16_counter) ; // wait here until time passes
 }
