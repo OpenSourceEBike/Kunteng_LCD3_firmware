@@ -9,7 +9,8 @@
 #ifndef _TIMERS_H_
 #define _TIMERS_H_
 
-void timer2_init (void);
+void timer3_init (void);
+void timer1_init (void);
 void delay_8us (uint16_t us8);
 
 #endif /* _TIMERS_H_ */

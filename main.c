@@ -58,45 +58,58 @@ int main (void);
 
 int main (void)
 {
-  volatile static uint16_t ui16_temp;
-  static uint8_t ui8_temp;
+  uint16_t ui16_temp;
+  uint8_t ui8_button_up_state;
+  uint8_t ui8_button_down_state;
+  uint8_t ui8_back_light_duty_cyle = 0;
 
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
 
   gpio_init ();
-  timer2_init ();
+
+  GPIO_Init(GPIOC,
+            GPIO_PIN_4,
+      GPIO_MODE_OUT_OD_HIZ_FAST); // enable PWM pin for LCD backlight control
+
+  timer1_init ();
+  timer3_init ();
   uart2_init ();
 //  adc_init ();
 
   GPIO_WriteHigh(GPIOB, GPIO_PIN_4); // enable VDD to HT1622 ??
-
   GPIO_WriteHigh(GPIOE, GPIO_PIN_3);
 
   GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
   GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
 
   ht1622_init ();
-//
-
 
   while (1)
   {
-//    ui16_temp = ui16_adc_read_ain4_10b ();
-
-    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
+    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
     if (ui16_temp == 0)
     {
-      if (ui8_temp)
+      if (ui8_button_up_state)
       {
         ht1622_enable_all_segments (1);
-        ui8_temp = 0;
+        ui8_button_up_state = 0;
       }
       else
       {
         ht1622_enable_all_segments (0);
-        ui8_temp = 1;
+        ui8_button_up_state = 1;
       }
+
+      while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
+    }
+
+    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
+    if (ui16_temp == 0)
+    {
+      ui8_back_light_duty_cyle += 3;
+      if (ui8_back_light_duty_cyle >= 12) { ui8_back_light_duty_cyle = 0; }
+      TIM1_SetCompare4(ui8_back_light_duty_cyle);
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
     }
