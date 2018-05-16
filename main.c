@@ -90,16 +90,7 @@ int main (void)
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
     if (ui16_temp == 0)
     {
-      if (ui8_button_up_state)
-      {
-        ht1622_enable_all_segments (1);
-        ui8_button_up_state = 0;
-      }
-      else
-      {
-        ht1622_enable_all_segments (0);
-        ui8_button_up_state = 1;
-      }
+      ht1622_increase_symbols();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
     }
@@ -110,6 +101,8 @@ int main (void)
       ui8_back_light_duty_cyle += 3;
       if (ui8_back_light_duty_cyle >= 12) { ui8_back_light_duty_cyle = 0; }
       TIM1_SetCompare4(ui8_back_light_duty_cyle);
+
+      ht1622_enable_all_segments (0);
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
     }

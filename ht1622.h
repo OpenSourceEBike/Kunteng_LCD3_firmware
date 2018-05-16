@@ -22,5 +22,6 @@
 void ht1622_init (void);
 void ht1622_enable_all_segments(uint8_t state);
 void ht1622_send_command(uint8_t command);
+void ht1622_increase_symbols(void);
 
 #endif /* _HT1622_H_ */

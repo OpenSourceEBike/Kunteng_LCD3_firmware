@@ -12,6 +12,10 @@
 #include "timers.h"
 #include "ht1622.h"
 
+uint8_t ui8_counter = 0;
+uint8_t ui8_data = 0;
+uint8_t ui8_address = 0;
+
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
 void ht1622_write_data(uint8_t address, uint16_t data, uint8_t bits);
@@ -95,6 +99,25 @@ void ht1622_enable_all_segments(uint8_t state)
 {
   for (uint8_t address = 0; address < 63; address++)
   {
-    ht1622_write_data(address, (state ? 0xff : 0x00), 6);
+    ht1622_write_data(address, (state ? 0xff : 0x00), 4);
   }
+
+  ui8_counter = 0;
+  ui8_data = 0;
+  ui8_address = 0;
+}
+
+void ht1622_increase_symbols(void)
+{
+  ui8_counter++;
+  if (ui8_counter >= 4)
+  {
+    ui8_counter = 0;
+    ui8_data = 0;
+    ui8_address = (ui8_address + 1) % 64;
+  }
+
+  ui8_data += 1 << ui8_counter;
+
+  ht1622_write_data(ui8_address, ui8_data, 4);
 }
