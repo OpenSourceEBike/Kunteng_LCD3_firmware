@@ -20,8 +20,7 @@
 #define  CMD_RC_INT   0x10  // RC INT     (0001-10XX-X) System clock source, on-chip RC oscillator
 
 void ht1622_init (void);
-void ht1622_enable_all_segments(uint8_t state);
-void ht1622_send_command(uint8_t command);
-void ht1622_increase_symbols(void);
+void lcd_control_w_symbol (uint8_t ui8_state);
+void ht1622_send_frame_buffer (void);
 
 #endif /* _HT1622_H_ */

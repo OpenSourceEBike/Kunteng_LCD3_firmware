@@ -12,20 +12,13 @@
 #include "timers.h"
 #include "ht1622.h"
 
-uint8_t ui8_counter = 0;
-uint8_t ui8_data = 0;
-uint8_t ui8_address = 0;
+// LCD RAM has 32*8 bits
+#define LCD_FRAME_BUFFER_SIZE 32
+uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
-void ht1622_write_data(uint8_t address, uint16_t data, uint8_t bits);
 
-// Init HT1622:
-// 1. select system clock source
-// 2. system enable
-// 3. set the display data in data memory
-// 4. turn on the LCD display
-// 5. update the display data in data memory.
 void ht1622_init (void)
 {
   GPIO_Init(LCD3_HT1622_CS__PORT,
@@ -86,38 +79,49 @@ void ht1622_send_command(uint8_t command)
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
-void ht1622_write_data(uint8_t address, uint16_t data, uint8_t bits)
+void ht1622_send_frame_buffer (void)
 {
+  uint8_t ui8_len;
+  uint8_t ui8_counter = 0;
+  uint8_t ui8_data = 0;
+  uint8_t ui8_lcd_frame_buffer_index = 0;
+
+  // send first address and first 4 bits
+  ui8_data = ui8_lcd_frame_buffer[ui8_lcd_frame_buffer_index];
   GPIO_WriteLow(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
   ht1622_send_bits(5, 3);
-  ht1622_send_bits(address, 6);
-  ht1622_send_bits(data, bits);
+  ht1622_send_bits(0, 6); // start at 0 address
+  ht1622_send_bits(ui8_data, 4);
+  ui8_counter++;
+
+  // send the rest of the frame buffer
+  ui8_len = LCD_FRAME_BUFFER_SIZE - 4;
+  while (ui8_len > 0)
+  {
+    ui8_len -= 4;
+
+    ui8_counter++;
+    if (ui8_counter == 2)
+    {
+      ui8_counter = 0;
+      ui8_data = ui8_lcd_frame_buffer[ui8_lcd_frame_buffer_index] >> 4;
+    }
+    else
+    {
+      ui8_lcd_frame_buffer_index++;
+      ui8_data = ui8_lcd_frame_buffer[ui8_lcd_frame_buffer_index];
+    }
+
+    ht1622_send_bits(ui8_data, 4);
+  }
+
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
-void ht1622_enable_all_segments(uint8_t state)
+void lcd_control_w_symbol (uint8_t ui8_state)
 {
-  for (uint8_t address = 0; address < 63; address++)
-  {
-    ht1622_write_data(address, (state ? 0xff : 0x00), 4);
-  }
-
-  ui8_counter = 0;
-  ui8_data = 0;
-  ui8_address = 0;
-}
-
-void ht1622_increase_symbols(void)
-{
-  ui8_counter++;
-  if (ui8_counter >= 4)
-  {
-    ui8_counter = 0;
-    ui8_data = 0;
-    ui8_address = (ui8_address + 1) % 64;
-  }
-
-  ui8_data += 1 << ui8_counter;
-
-  ht1622_write_data(ui8_address, ui8_data, 4);
+  if (ui8_state)
+    ui8_lcd_frame_buffer[10] |= 1;
+  else
+    ui8_lcd_frame_buffer[10] &= ~1;
 }
