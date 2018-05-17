@@ -12,7 +12,7 @@
 #include "gpio.h"
 #include "timers.h"
 #include "adc.h"
-#include "ht1622.h"
+#include "lcd.h"
 #include "uart.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,15 +83,15 @@ int main (void)
   GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
   GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
 
-  ht1622_init ();
+  lcd_init ();
 
   while (1)
   {
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
     if (ui16_temp == 0)
     {
-      lcd_control_w_symbol(1);
-      ht1622_send_frame_buffer();
+      lcd_enable_w_symbol(1);
+      lcd_send_frame_buffer();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
     }
@@ -99,8 +99,8 @@ int main (void)
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
     if (ui16_temp == 0)
     {
-      lcd_control_w_symbol(0);
-      ht1622_send_frame_buffer();
+      lcd_enable_w_symbol(0);
+      lcd_send_frame_buffer();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
     }
@@ -111,6 +111,9 @@ int main (void)
       ui8_back_light_duty_cyle += 3;
       if (ui8_back_light_duty_cyle >= 12) { ui8_back_light_duty_cyle = 0; }
       TIM1_SetCompare4(ui8_back_light_duty_cyle);
+
+      lcd_clear_frame_buffer();
+      lcd_send_frame_buffer();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_ONOFF__PORT, LCD3_BUTTON_ONOFF__PIN)) ;
     }

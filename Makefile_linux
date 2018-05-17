@@ -38,10 +38,10 @@ EXTRASRCS = \
 	gpio.c \
 	adc.c \
 	timers.c \
-	ht1622.c \
+	lcd.c \
 	uart.c \
 
-HEADERS = gpio.h main.h adc.h timers.h ht1622.h uart.h
+HEADERS = gpio.h main.h adc.h timers.h lcd.h uart.h
 
 # The list of .rel files can be derived from the list of their source files
 RELS = $(EXTRASRCS:.c=.rel)

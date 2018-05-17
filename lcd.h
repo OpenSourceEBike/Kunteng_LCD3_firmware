@@ -6,8 +6,8 @@
  * Released under the GPL License, Version 3
  */
 
-#ifndef _HT1622_H_
-#define _HT1622_H_
+#ifndef _LCD_H_
+#define _LCD_H_
 
 #include "main.h"
 #include "stm8s_gpio.h"
@@ -19,8 +19,8 @@
 #define  CMD_LCD_ON   0x03  // LCD ON     (0000-0011-X) Turn on  LCD display
 #define  CMD_RC_INT   0x10  // RC INT     (0001-10XX-X) System clock source, on-chip RC oscillator
 
-void ht1622_init (void);
-void lcd_control_w_symbol (uint8_t ui8_state);
-void ht1622_send_frame_buffer (void);
+void lcd_init (void);
+void lcd_enable_w_symbol (uint8_t ui8_state);
+void lcd_send_frame_buffer (void);
 
-#endif /* _HT1622_H_ */
+#endif /* _LCD_H_ */

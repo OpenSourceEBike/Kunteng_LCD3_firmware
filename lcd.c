@@ -6,11 +6,12 @@
  * Released under the GPL License, Version 3
  */
 
+#include <string.h>
 #include "stm8s.h"
 #include "stm8s_gpio.h"
 #include "gpio.h"
 #include "timers.h"
-#include "ht1622.h"
+#include "lcd.h"
 
 // LCD RAM has 32*8 bits
 #define LCD_FRAME_BUFFER_SIZE 32
@@ -19,7 +20,7 @@ uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
 
-void ht1622_init (void)
+void lcd_init (void)
 {
   GPIO_Init(LCD3_HT1622_CS__PORT,
             LCD3_HT1622_CS__PIN,
@@ -79,7 +80,12 @@ void ht1622_send_command(uint8_t command)
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
-void ht1622_send_frame_buffer (void)
+void lcd_clear_frame_buffer (void)
+{
+  memset(ui8_lcd_frame_buffer, 0, LCD_FRAME_BUFFER_SIZE);
+}
+
+void lcd_send_frame_buffer (void)
 {
   uint8_t ui8_len;
   uint8_t ui8_counter = 0;
@@ -95,10 +101,10 @@ void ht1622_send_frame_buffer (void)
   ui8_counter++;
 
   // send the rest of the frame buffer
-  ui8_len = LCD_FRAME_BUFFER_SIZE - 4;
+  ui8_len = LCD_FRAME_BUFFER_SIZE - 1;
   while (ui8_len > 0)
   {
-    ui8_len -= 4;
+    ui8_len--;
 
     ui8_counter++;
     if (ui8_counter == 2)
@@ -118,10 +124,10 @@ void ht1622_send_frame_buffer (void)
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
-void lcd_control_w_symbol (uint8_t ui8_state)
+void lcd_enable_w_symbol (uint8_t ui8_state)
 {
   if (ui8_state)
-    ui8_lcd_frame_buffer[10] |= 1;
+    ui8_lcd_frame_buffer[9] |= 128;
   else
-    ui8_lcd_frame_buffer[10] &= ~1;
+    ui8_lcd_frame_buffer[9] &= ~128;
 }
