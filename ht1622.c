@@ -15,6 +15,7 @@
 uint8_t ui8_counter = 0;
 uint8_t ui8_data = 0;
 uint8_t ui8_address = 0;
+uint8_t ui8_address_absolute = 0;
 
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
@@ -109,15 +110,54 @@ void ht1622_enable_all_segments(uint8_t state)
 
 void ht1622_increase_symbols(void)
 {
-  ui8_counter++;
-  if (ui8_counter >= 4)
+  static uint8_t _ui8_address_absolute;
+
+  if (ui8_address_absolute < 63)
   {
-    ui8_counter = 0;
-    ui8_data = 0;
-    ui8_address = (ui8_address + 1) % 64;
+    ui8_address_absolute++;
+
+    ui8_counter++;
+    if (ui8_counter >= 4)
+    {
+      // disable current enabled symbol
+      ht1622_write_data(ui8_address, 0, 4);
+
+      ui8_counter = 0;
+      ui8_data = 0;
+      ui8_address = (ui8_address + 1) % 64;
+    }
+
+    ui8_data = 1 << ui8_counter;
+
+    ht1622_write_data(ui8_address, ui8_data, 4);
   }
 
-  ui8_data += 1 << ui8_counter;
+  _ui8_address_absolute = ui8_address_absolute;
+}
 
-  ht1622_write_data(ui8_address, ui8_data, 4);
+void ht1622_decrease_symbols(void)
+{
+  static uint8_t _ui8_address_absolute;
+
+  if (ui8_address_absolute > 0)
+  {
+    ui8_address_absolute--;
+
+    if (ui8_counter > 0) ui8_counter--;
+    if (ui8_counter == 0)
+    {
+      // disable current enabled symbol
+      ht1622_write_data(ui8_address, 0, 4);
+
+      ui8_counter = 3;
+      ui8_data = 0;
+      ui8_address = (ui8_address - 1) % 64;
+    }
+
+    ui8_data = 1 << ui8_counter;
+
+    ht1622_write_data(ui8_address, ui8_data, 4);
+  }
+
+  _ui8_address_absolute = ui8_address_absolute;
 }
