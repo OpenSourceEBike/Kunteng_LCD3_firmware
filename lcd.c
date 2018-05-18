@@ -20,8 +20,29 @@ uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
 
+uint8_t ui8_lcd_field_offset[] = { 0, ODOMETER_DIGIT_OFFSET, 0, 0, 0, 0 };
+uint8_t ui8_lcd_digit_mask[] = {
+    NUMBER_0_MASK,
+    NUMBER_1_MASK,
+    NUMBER_2_MASK,
+    NUMBER_3_MASK,
+    NUMBER_4_MASK,
+    NUMBER_5_MASK,
+    NUMBER_6_MASK,
+    NUMBER_7_MASK,
+    NUMBER_8_MASK,
+    NUMBER_9_MASK
+};
+
 void lcd_init (void)
 {
+  GPIO_WriteHigh(GPIOB, GPIO_PIN_4); // enable VDD to HT1622 ??
+  GPIO_WriteHigh(GPIOE, GPIO_PIN_3);
+
+  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
+  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
+
+
   GPIO_Init(LCD3_HT1622_CS__PORT,
             LCD3_HT1622_CS__PIN,
             GPIO_MODE_OUT_PP_LOW_FAST);
@@ -124,30 +145,57 @@ void lcd_send_frame_buffer (void)
   GPIO_WriteHigh(LCD3_HT1622_CS__PORT, LCD3_HT1622_CS__PIN);
 }
 
+void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
+{
+  uint8_t ui8_digit;
+  uint8_t ui8_counter;
+
+  // first delete the field
+  for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
+  {
+    ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= NUMBERS_MASK;
+
+    if (ui8_counter == 0 && ui8_lcd_field == 0) break;
+    if (ui8_counter == 4 && ui8_lcd_field == 1) break;
+    if (ui8_counter == 1 && ui8_lcd_field == 2) break;
+    if (ui8_counter == 2 && ui8_lcd_field == 3) break;
+    if (ui8_counter == 2 && ui8_lcd_field == 4) break;
+    if (ui8_counter == 4 && ui8_lcd_field == 5) break;
+  }
+
+  // print digit by digit
+  for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
+  {
+    ui8_digit = ui32_number % 10;
+
+    // print only first 2 zeros
+    if (ui8_counter > 1 && ui32_number == 0)
+    {
+      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+    }
+    else
+    {
+      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] |= ui8_lcd_digit_mask[ui8_digit];
+    }
+
+    if (ui8_counter == 0 && ui8_lcd_field == 0) break;
+    if (ui8_counter == 1 && ui8_lcd_field == 2) break;
+    if (ui8_counter == 2 && ui8_lcd_field == 3) break;
+    if (ui8_counter == 2 && ui8_lcd_field == 4) break;
+    if (ui8_counter == 4 && ui8_lcd_field == 5) break;
+
+    ui32_number /= 10;
+  }
+
+  lcd_send_frame_buffer ();
+}
+
 void lcd_enable_w_symbol (uint8_t ui8_state)
 {
-//  if (ui8_state)
-//    ui8_lcd_frame_buffer[9] |= 128;
-//  else
-//    ui8_lcd_frame_buffer[9] &= ~128;
-
-    if (ui8_state)
-    {
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] |= ODOMETER_NUMBER_3_MASK;
-    }
-
-    else
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
-
-    if (ui8_state)
-    {
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] |= ODOMETER_NUMBER_6_MASK;
-    }
-
-    else
-      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 128;
+  else
+    ui8_lcd_frame_buffer[9] &= ~128;
 }
 
 void lcd_enable_odometer_point_symbol (uint8_t ui8_state)

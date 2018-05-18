@@ -63,6 +63,9 @@ int main (void)
   uint8_t ui8_button_down_state;
   uint8_t ui8_back_light_duty_cyle = 0;
 
+  uint32_t ui32_number;
+  ui32_number = 0;
+
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
 
@@ -77,23 +80,22 @@ int main (void)
   uart2_init ();
 //  adc_init ();
 
-  GPIO_WriteHigh(GPIOB, GPIO_PIN_4); // enable VDD to HT1622 ??
-  GPIO_WriteHigh(GPIOE, GPIO_PIN_3);
-
-  GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
-  GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
-
   lcd_init ();
   lcd_clear_frame_buffer ();
   lcd_send_frame_buffer();
+
+  lcd_enable_odometer_point_symbol (1);
+  lcd_print (ui32_number, ODOMETER);
+
+  TIM1_SetCompare4 (10);
 
   while (1)
   {
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
     if (ui16_temp == 0)
     {
-        lcd_enable_w_symbol(1);
-      lcd_send_frame_buffer();
+      ui32_number += 10;
+      lcd_print (ui32_number, ODOMETER);
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
     }
@@ -101,8 +103,8 @@ int main (void)
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
     if (ui16_temp == 0)
     {
-        lcd_enable_w_symbol(0);
-      lcd_send_frame_buffer();
+      ui32_number += 1;
+      lcd_print (ui32_number, ODOMETER);
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
     }
