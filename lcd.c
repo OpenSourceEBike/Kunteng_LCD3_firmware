@@ -126,8 +126,34 @@ void lcd_send_frame_buffer (void)
 
 void lcd_enable_w_symbol (uint8_t ui8_state)
 {
+//  if (ui8_state)
+//    ui8_lcd_frame_buffer[9] |= 128;
+//  else
+//    ui8_lcd_frame_buffer[9] &= ~128;
+
+    if (ui8_state)
+    {
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] |= ODOMETER_NUMBER_3_MASK;
+    }
+
+    else
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_1_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
+
+    if (ui8_state)
+    {
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] |= ODOMETER_NUMBER_6_MASK;
+    }
+
+    else
+      ui8_lcd_frame_buffer[ODOMETER_DIGIT_2_OFFSET] &= ~ODOMETER_NUMBERS_MASK;
+}
+
+void lcd_enable_odometer_point_symbol (uint8_t ui8_state)
+{
   if (ui8_state)
-    ui8_lcd_frame_buffer[9] |= 128;
+    ui8_lcd_frame_buffer[6] |= 8;
   else
-    ui8_lcd_frame_buffer[9] &= ~128;
+    ui8_lcd_frame_buffer[6] &= ~8;
 }

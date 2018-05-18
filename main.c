@@ -84,13 +84,15 @@ int main (void)
   GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
 
   lcd_init ();
+  lcd_clear_frame_buffer ();
+  lcd_send_frame_buffer();
 
   while (1)
   {
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
     if (ui16_temp == 0)
     {
-      lcd_enable_w_symbol(1);
+        lcd_enable_w_symbol(1);
       lcd_send_frame_buffer();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
@@ -99,7 +101,7 @@ int main (void)
     ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
     if (ui16_temp == 0)
     {
-      lcd_enable_w_symbol(0);
+        lcd_enable_w_symbol(0);
       lcd_send_frame_buffer();
 
       while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
