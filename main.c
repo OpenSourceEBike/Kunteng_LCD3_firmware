@@ -135,15 +135,14 @@ int main (void)
       if (1)
       {
         // low pass filter the battery to smooth the signal
-        ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> 8;
+        ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> 2;
         ui16_battery_current_accumulated += ((uint16_t) ui8_rx_buffer[3]);
-        ui8_battery_current_filtered = ui16_battery_current_accumulated >> 8;
-
+        ui8_battery_current_filtered = ui16_battery_current_accumulated >> 2;
 
         //ui8_rx_buffer[2] == 8 if torque sensor
         //ui8_rx_buffer[2] == 4 if motor running
 
-        lcd_print (ui8_battery_current_filtered * 2, ODOMETER_FIELD);
+        lcd_print (ui8_battery_current_filtered << 1, ODOMETER_FIELD);
       }
 
       // send the packet from LCD to motor controller
@@ -184,11 +183,13 @@ int main (void)
       }
 
 
+      // signal that we processed the full package
+      ui8_received_package_flag = 0;
+
       // enable UART2 receive interrupt as we are now ready to receive a new package
       UART2->CR2 |= (1 << 5);
 
-      // signal that we processed the full package
-      ui8_received_package_flag = 0;
+      enableInterrupts ();
     }
 
 
@@ -284,6 +285,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
         ui8_state_machine = 0;
         ui8_received_package_flag = 1; // signal that we have a full package to be processed
         UART2->CR2 &= ~(1 << 5); // disable UART2 receive interrupt
+        disableInterrupts ();
       }
       break;
 
