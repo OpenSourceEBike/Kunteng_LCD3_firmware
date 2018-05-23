@@ -20,7 +20,7 @@ uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 void ht1622_send_bits(uint16_t ui16_data, uint8_t ui8_bits);
 void ht1622_send_command(uint8_t command);
 
-uint8_t ui8_lcd_field_offset[] = { 0, ODOMETER_DIGIT_OFFSET, 0, 0, 0, 0 };
+uint8_t ui8_lcd_field_offset[] = { ASSIST_LEVEL_DIGIT_OFFSET, ODOMETER_DIGIT_OFFSET, 0, 0, 0, 0 };
 uint8_t ui8_lcd_digit_mask[] = {
     NUMBER_0_MASK,
     NUMBER_1_MASK,

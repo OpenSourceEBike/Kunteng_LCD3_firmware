@@ -20,10 +20,12 @@
 #define  CMD_RC_INT   0x10  // RC INT     (0001-10XX-X) System clock source, on-chip RC oscillator
 
 
-#define ODOMETER     1
+#define ASSIST_LEVEL_FIELD     0
+#define ODOMETER_FIELD         1
 
 // each digit needs 7 bits to be defined + 1 digit that can be another symbol like a "point"
-#define ODOMETER_DIGIT_OFFSET     6 // 48
+#define ASSIST_LEVEL_DIGIT_OFFSET     1 // 8
+#define ODOMETER_DIGIT_OFFSET         6 // 48
 
 #define NUMBERS_MASK     8
 #define NUMBER_0_MASK    119

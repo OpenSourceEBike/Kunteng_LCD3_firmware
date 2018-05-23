@@ -20,7 +20,8 @@
 // UART2 Receive interrupt
 void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
 
-void communications_controller (void);
+uint8_t get_lcd_button_up_state (void);
+uint8_t get_lcd_button_down_state (void);
 
 // main -- start of firmware and main loop
 int main (void);
@@ -63,13 +64,20 @@ int main (void);
 uint8_t ui8_received_package_flag = 0;
 uint8_t ui8_rx_buffer[9];
 uint8_t ui8_rx_counter = 0;
+uint8_t ui8_tx_buffer[7];
+uint8_t ui8_tx_counter = 0;
 uint8_t ui8_i;
-uint8_t ui8_crc;
+uint8_t ui8_checksum;
 uint8_t ui8_byte_received;
 uint8_t ui8_state_machine = 0;
 
 uint8_t ui8_battery_current_filtered = 0;
 uint16_t ui16_battery_current_accumulated = 0;
+
+uint8_t ui8_assist_level = 0;
+
+
+volatile static uint8_t ui8_log;
 
 int main (void)
 {
@@ -78,18 +86,7 @@ int main (void)
   uint8_t ui8_button_down_state;
   uint8_t ui8_back_light_duty_cyle = 0;
 
-  uint32_t ui32_number;
-
-  static uint8_t ui8_1;
-  static uint8_t ui8_2;
-  static uint8_t ui8_3;
-  static uint8_t ui8_4;
-  static uint8_t ui8_5;
-  static uint8_t ui8_6;
-  static uint8_t ui8_7;
-  static uint8_t ui8_8;
-  static uint8_t ui8_9;
-  static uint8_t ui8_10;
+  static uint8_t ui8_debug;
 
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
@@ -110,7 +107,9 @@ int main (void)
   lcd_send_frame_buffer();
 
   lcd_enable_odometer_point_symbol (1);
-  lcd_print (ui32_number, ODOMETER);
+
+  lcd_print (0, ODOMETER_FIELD);
+  lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
 
   TIM1_SetCompare4 (10);
 
@@ -118,10 +117,100 @@ int main (void)
 
   while (1)
   {
-    communications_controller ();
+    // see if we have a received package from UART, to be processed
+    if (ui8_received_package_flag)
+    {
+      // validation of the package data
+      // last byte is the checksum
+      ui8_checksum = 0;
+      for (ui8_i = 0; ui8_i <= 7; ui8_i++)
+      {
+        ui8_checksum += ui8_rx_buffer[ui8_i];
+      }
+      ui8_checksum = ui8_checksum % 256;
+
+      // see if checksum is ok
+      // NOTE: seems the firmware always send checksum = 0
+//      if (ui8_checksum == ui8_rx_buffer [8])
+      if (1)
+      {
+        // low pass filter the battery to smooth the signal
+        ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> 8;
+        ui16_battery_current_accumulated += ((uint16_t) ui8_rx_buffer[3]);
+        ui8_battery_current_filtered = ui16_battery_current_accumulated >> 8;
 
 
+        //ui8_rx_buffer[2] == 8 if torque sensor
+        //ui8_rx_buffer[2] == 4 if motor running
 
+        lcd_print (ui8_battery_current_filtered * 2, ODOMETER_FIELD);
+      }
+
+      // send the packet from LCD to motor controller
+//      59 40 00 1C 00 1B D0
+//      1. fixed/startbyte = 59?
+//      2. byte contains flags for the selected step,light and 6kmh. 40=01000000=step1. bits from left to right as i know: unknown,step1,6kmh-active,off,step4,step3,step2,headlight
+//      3. not sure
+//      4. wheel size, 1C hex = 28inch
+//      5. not sure
+//      6. max speed, 1B hex = 27(kmh?)
+//      7. 1byte checksum
+
+      ui8_tx_buffer[0] = 0x59;
+
+      ui8_tx_buffer[1] = 0x10;
+      if (ui8_assist_level == 1) ui8_tx_buffer[1] = 0x40;
+      if (ui8_assist_level == 2) ui8_tx_buffer[1] = 0x02;
+      if (ui8_assist_level == 3) ui8_tx_buffer[1] = 0x04;
+      if (ui8_assist_level == 4) ui8_tx_buffer[1] = 0x08;
+
+      ui8_tx_buffer[2] = 0x00;
+      ui8_tx_buffer[3] = 0x1C;
+      ui8_tx_buffer[4] = 0x00;
+      ui8_tx_buffer[5] = 0x1B;
+
+      ui8_checksum = 0;
+      for (ui8_i = 0; ui8_i <= 5; ui8_i++)
+      {
+        ui8_checksum += ui8_tx_buffer[ui8_i];
+      }
+      ui8_checksum = ui8_checksum % 256;
+      ui8_tx_buffer[6] = ui8_checksum;
+
+      // send the full package to UART
+      for (ui8_i = 0; ui8_i <= 6; ui8_i++)
+      {
+        putchar (ui8_tx_buffer[ui8_i]);
+      }
+
+
+      // enable UART2 receive interrupt as we are now ready to receive a new package
+      UART2->CR2 |= (1 << 5);
+
+      // signal that we processed the full package
+      ui8_received_package_flag = 0;
+    }
+
+
+    if (get_lcd_button_up_state ())
+    {
+      if (ui8_assist_level < 4)
+        ui8_assist_level++;
+
+      while (get_lcd_button_up_state ()) ;
+
+      lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
+    }
+
+    if (get_lcd_button_down_state ())
+    {
+      if (ui8_assist_level > 0)
+        ui8_assist_level--;
+
+      while (get_lcd_button_down_state ()) ;
+
+      lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
+    }
 
 
 //    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
@@ -142,164 +231,21 @@ int main (void)
 //      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
 //    }
 //
-//    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_ONOFF__PORT, LCD3_BUTTON_ONOFF__PIN);
-//    if (ui16_temp == 0)
+//    ui16_temp = get_lcd_button_down_state ();
+//    if (ui16_temp == 1)
 //    {
 //      ui8_back_light_duty_cyle += 3;
 //      if (ui8_back_light_duty_cyle >= 12) { ui8_back_light_duty_cyle = 0; }
 //      TIM1_SetCompare4(ui8_back_light_duty_cyle);
+////
+////      lcd_clear_frame_buffer();
+////      lcd_send_frame_buffer();
 //
-//      lcd_clear_frame_buffer();
-//      lcd_send_frame_buffer();
-//
-//      while (!GPIO_ReadInputPin(LCD3_BUTTON_ONOFF__PORT, LCD3_BUTTON_ONOFF__PIN)) ;
+//      while (get_lcd_button_down_state ()) ;
 //    }
   }
 
   return 0;
-}
-
-void communications_controller (void)
-{
-//  uint8_t ui8_moving_indication;
-//  uint8_t ui8_battery_current;
-//
-//  /********************************************************************************************/
-//  // Prepare and send packate to LCD
-//  //
-//
-//  // calc wheel period in ms
-//  if (f_wheel_speed < 1) { ui16_wheel_period_ms = 36000.0 * f_wheel_perimeter; } // this is needed to get LCD showing 0 km/h
-//  else { ui16_wheel_period_ms = (3600.0 * f_wheel_perimeter) / f_wheel_speed; }
-//
-//  // calc battery pack state of charge (SOC)
-//  ui16_battery_volts = ((uint16_t) ebike_app_get_ADC_battery_voltage_filtered ()) * ((uint16_t) ADC_BATTERY_VOLTAGE_K);
-//  if (ui16_battery_volts > ((uint16_t) BATTERY_PACK_VOLTS_80)) { ui8_battery_soc = 16; } // 4 bars | full
-//  else if (ui16_battery_volts > ((uint16_t) BATTERY_PACK_VOLTS_60)) { ui8_battery_soc = 12; } // 3 bars
-//  else if (ui16_battery_volts > ((uint16_t) BATTERY_PACK_VOLTS_40)) { ui8_battery_soc = 8; } // 2 bars
-//  else if (ui16_battery_volts > ((uint16_t) BATTERY_PACK_VOLTS_20)) { ui8_battery_soc = 4; } // 1 bar
-//  else if (ui16_battery_volts > ((uint16_t) BATTERY_PACK_VOLTS_10)) { ui8_battery_soc = 3; } // empty
-//  else { ui8_battery_soc = 1; } // flashing
-//
-//  // prepare error
-//  ui16_error = ebike_app_get_error (); // get the error value
-//  // if battery under voltage, signal instead on LCD battery symbol
-//  if (ui16_error == EBIKE_APP_ERROR_91_BATTERY_UNDER_VOLTAGE)
-//  {
-//    ui8_battery_soc = 1; // empty flashing
-//    ui16_error = 0;
-//  }
-//
-//  // prepare moving indication info
-//  ui8_moving_indication = 0;
-//  if (motor_controller_state_is_set (MOTOR_CONTROLLER_STATE_BRAKE) ||
-//      motor_controller_state_is_set (MOTOR_CONTROLLER_STATE_BRAKE_LIKE_COAST_BRAKES)) { ui8_moving_indication = (1 << 5); }
-//  if (ebike_app_cruise_control_is_set ()) { ui8_moving_indication |= (1 << 3); }
-//  if (ebike_app_throttle_is_released ()) { ui8_moving_indication |= (1 << 1); }
-//  if (pas_is_set ()) { ui8_moving_indication |= (1 << 4); }
-
-//  // if battery over voltage, signal instead on LCD with battery symbol flashing and brake signal
-//  if (motor_controller_state_is_set(MOTOR_CONTROLLER_STATE_OVER_VOLTAGE))
-//  {
-//    ui8_battery_soc = 2; // border flashing
-//    ui16_error = 0;
-//    ui8_moving_indication = (1 << 5);
-//  }
-//
-//  // preparing the package
-//  // B0: start package (?)
-//  ui8_tx_buffer [0] = 65;
-//  // B1: battery level
-//  ui8_tx_buffer [1] = ui8_battery_soc;
-//  // B2: 24V controller
-//  ui8_tx_buffer [2] = (uint8_t) COMMUNICATIONS_BATTERY_VOLTAGE;
-//  // B3: speed, wheel rotation period, ms; period(ms)=B3*256+B4;
-//  ui8_tx_buffer [3] = (ui16_wheel_period_ms >> 8) & 0xff;
-//  ui8_tx_buffer [4] = ui16_wheel_period_ms & 0xff;
-//  // B5: error info display
-//  ui8_tx_buffer [5] = ui16_error;
-//  // B6: CRC: xor B1,B2,B3,B4,B5,B7,B8,B9,B10,B11
-//  // 0 value so no effect on xor operation for now
-//  ui8_tx_buffer [6] = 0;
-//  // B7: moving mode indication, bit
-//  // throttle: 2
-//  ui8_tx_buffer [7] = ui8_moving_indication;
-//  // B8: 4x controller current
-//  // each unit of B8 = 0.5A
-//  ui8_battery_current = ebike_app_get_battery_current_filtered ();
-//  ui8_tx_buffer [8] = (uint8_t) ((float) ui8_battery_current * (float) LCD_BATTERY_CURRENT_FACTOR);
-//  // B9: motor temperature
-//  ui8_tx_buffer [9] = 0;
-//  // B10 and B11: 0
-//  ui8_tx_buffer [10] = 0;
-//  ui8_tx_buffer [11] = 0;
-//
-//  // calculate CRC xor
-//  ui8_crc = 0;
-//  for (ui8_i = 1; ui8_i <= 11; ui8_i++)
-//  {
-//    ui8_crc ^= ui8_tx_buffer[ui8_i];
-//  }
-//  ui8_tx_buffer [6] = ui8_crc;
-//
-//  // send the package over UART
-//  for (ui8_i = 0; ui8_i <= 11; ui8_i++)
-//  {
-//    putchar (ui8_tx_buffer [ui8_i]);
-//  }
-
-  /********************************************************************************************/
-  // Process received package from the LCD
-  //
-
-  // see if we have a received package to be processed
-  if (ui8_received_package_flag)
-  {
-    // validation of the package data
-    ui8_crc = 0;
-    for (ui8_i = 0; ui8_i <= 8; ui8_i++)
-    {
-      if (ui8_i == 7) continue; // last byte is checksum
-      ui8_crc += ui8_rx_buffer[ui8_i];
-    }
-    ui8_crc = ui8_crc % 256;
-
-    // see if CRC is ok
-//    if (ui8_crc == ui8_rx_buffer [8])
-    if (1)
-    {
-//      lcd_configuration_variables.ui8_assist_level = ui8_rx_buffer [3] & 7;
-//      lcd_configuration_variables.ui8_motor_characteristic = ui8_rx_buffer [5];
-//      lcd_configuration_variables.ui8_wheel_size = ((ui8_rx_buffer [6] & 192) >> 6) | ((ui8_rx_buffer [4] & 7) << 2);
-//      lcd_configuration_variables.ui8_max_speed = 10 + ((ui8_rx_buffer [4] & 248) >> 3) | (ui8_rx_buffer [6] & 32);
-//      lcd_configuration_variables.ui8_power_assist_control_mode = ui8_rx_buffer [6] & 8;
-//      lcd_configuration_variables.ui8_controller_max_current = (ui8_rx_buffer [9] & 15);
-//
-//      // now write values to EEPROM, but only if one of them changed
-//      eeprom_write_if_values_changed ();
-
-//        lcd_print ((ui8_rx_buffer[3] - 88) * 10, ODOMETER);
-
-
-        // low pass filter the battery to smooth the signal
-        ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> 8;
-        ui16_battery_current_accumulated += ((uint16_t) ui8_rx_buffer[3]);
-        ui8_battery_current_filtered = ui16_battery_current_accumulated >> 8;
-
-        lcd_print (ui8_battery_current_filtered * 2, ODOMETER);
-
-
-
-
-    }
-
-    UART2->CR2 |= (1 << 5); // enable UART2 receive interrupt as we are now ready to receive a new package
-  }
-
-//  // do here some tasks that must be done even if we don't receive a package from the LCD
-//// NOTE: we are now setup controller max current on another place
-//  set_motor_controller_max_current (lcd_configuration_variables.ui8_controller_max_current);
-//  ui8_wheel_speed_max = lcd_configuration_variables.ui8_max_speed;
 }
 
 // This is the interrupt that happesn when UART2 receives data. We need it to be the fastest possible and so
@@ -316,7 +262,8 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       case 0:
       if (ui8_byte_received == 67) // see if we get start package byte
       {
-        ui8_rx_buffer[ui8_rx_counter++] = ui8_byte_received;
+        ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
+        ui8_rx_counter++;
         ui8_state_machine = 1;
       }
       else
@@ -327,24 +274,16 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       break;
 
       case 1:
-      ui8_rx_buffer[ui8_rx_counter++] = ui8_byte_received;
+      ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
+      ui8_rx_counter++;
 
       // see if is the last byte of the package
-      if (ui8_rx_counter > 8)
+      if (ui8_rx_counter > 9)
       {
         ui8_rx_counter = 0;
         ui8_state_machine = 0;
         ui8_received_package_flag = 1; // signal that we have a full package to be processed
         UART2->CR2 &= ~(1 << 5); // disable UART2 receive interrupt
-
-//        // 59 40 00 1C 00 1B D0
-//        putchar (0x59);
-//        putchar (0x40);
-//        putchar (0x00);
-//        putchar (0x1C);
-//        putchar (0x00);
-//        putchar (0x1b);
-//        putchar (0xD0);
       }
       break;
 
@@ -352,4 +291,14 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       break;
     }
   }
+}
+
+uint8_t get_lcd_button_up_state (void)
+{
+  return GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN) != 0 ? 0: 1;
+}
+
+uint8_t get_lcd_button_down_state (void)
+{
+  return GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN) != 0 ? 0: 1;
 }
