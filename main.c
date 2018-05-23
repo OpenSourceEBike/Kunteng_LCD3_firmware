@@ -68,6 +68,9 @@ uint8_t ui8_crc;
 uint8_t ui8_byte_received;
 uint8_t ui8_state_machine = 0;
 
+uint8_t ui8_battery_current_filtered = 0;
+uint16_t ui16_battery_current_accumulated = 0;
+
 int main (void)
 {
   uint16_t ui16_temp;
@@ -275,8 +278,19 @@ void communications_controller (void)
 //      // now write values to EEPROM, but only if one of them changed
 //      eeprom_write_if_values_changed ();
 
-//        lcd_print ((ui8_rx_buffer[4] - 88) * 10, ODOMETER);
-        lcd_print (ui8_rx_buffer[3] * 10, ODOMETER);
+//        lcd_print ((ui8_rx_buffer[3] - 88) * 10, ODOMETER);
+
+
+        // low pass filter the battery to smooth the signal
+        ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> 8;
+        ui16_battery_current_accumulated += ((uint16_t) ui8_rx_buffer[3]);
+        ui8_battery_current_filtered = ui16_battery_current_accumulated >> 8;
+
+        lcd_print (ui8_battery_current_filtered * 2, ODOMETER);
+
+
+
+
     }
 
     UART2->CR2 |= (1 << 5); // enable UART2 receive interrupt as we are now ready to receive a new package
@@ -322,6 +336,15 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
         ui8_state_machine = 0;
         ui8_received_package_flag = 1; // signal that we have a full package to be processed
         UART2->CR2 &= ~(1 << 5); // disable UART2 receive interrupt
+
+//        // 59 40 00 1C 00 1B D0
+//        putchar (0x59);
+//        putchar (0x40);
+//        putchar (0x00);
+//        putchar (0x1C);
+//        putchar (0x00);
+//        putchar (0x1b);
+//        putchar (0xD0);
       }
       break;
 
