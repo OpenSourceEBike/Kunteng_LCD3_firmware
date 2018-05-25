@@ -18,4 +18,20 @@
 #define UART2_IRQHANDLER 21
 #define ADC1_IRQHANDLER 22
 
+// *************************************************************************** //
+// EEPROM memory variables default values
+#define DEFAULT_VALUE_ASSIST_LEVEL   1
+#define DEFAULT_VALUE_WHEEL_SIZE    20 // 26''
+#define DEFAULT_VALUE_MAX_SPEED     25
+// *************************************************************************** //
+
+typedef struct _configuration_variables
+{
+  uint8_t ui8_assist_level;
+  uint8_t ui8_wheel_size;
+  uint8_t ui8_max_speed;
+} struct_configuration_variables;
+
+struct_configuration_variables* get_configuration_variables (void);
+
 #endif // _MAIN_H_

@@ -14,17 +14,7 @@
 #include "adc.h"
 #include "lcd.h"
 #include "uart.h"
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-//// Functions prototypes
-// UART2 Receive interrupt
-void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
-
-uint8_t get_lcd_button_up_state (void);
-uint8_t get_lcd_button_down_state (void);
-
-// main -- start of firmware and main loop
-int main (void);
+#include "eeprom.h"
 
 // With SDCC, interrupt service routine function prototypes must be placed in the file that contains main ()
 // in order for an vector for the interrupt to be placed in the the interrupt vector space.  It's acceptable
@@ -46,21 +36,6 @@ int main (void);
 /////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-// UART2 Receive interrupt
-//void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-// This is the interrupt that happesn when UART2 receives data.
-//void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
-//{
-//  if(UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET)
-//  {
-////    ui8_byte_received = UART2_ReceiveData8 ();
-//  }
-//}
-
 uint8_t ui8_received_package_flag = 0;
 uint8_t ui8_rx_buffer[9];
 uint8_t ui8_rx_counter = 0;
@@ -74,8 +49,18 @@ uint8_t ui8_state_machine = 0;
 uint8_t ui8_battery_current_filtered = 0;
 uint16_t ui16_battery_current_accumulated = 0;
 
-uint8_t ui8_assist_level = 0;
+struct_configuration_variables configuration_variables;
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//// Functions prototypes
+// UART2 Receive interrupt
+void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
+
+uint8_t get_lcd_button_up_state (void);
+uint8_t get_lcd_button_down_state (void);
+
+// main -- start of firmware and main loop
+int main (void);
 
 volatile static uint8_t ui8_log;
 
@@ -102,6 +87,8 @@ int main (void)
   uart2_init ();
 //  adc_init ();
 
+  eeprom_init ();
+
   lcd_init ();
   lcd_clear_frame_buffer ();
   lcd_send_frame_buffer();
@@ -109,7 +96,7 @@ int main (void)
   lcd_enable_odometer_point_symbol (1);
 
   lcd_print (0, ODOMETER_FIELD);
-  lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
+  lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
 
   TIM1_SetCompare4 (10);
 
@@ -158,10 +145,10 @@ int main (void)
       ui8_tx_buffer[0] = 0x59;
 
       ui8_tx_buffer[1] = 0x10;
-      if (ui8_assist_level == 1) ui8_tx_buffer[1] = 0x40;
-      if (ui8_assist_level == 2) ui8_tx_buffer[1] = 0x02;
-      if (ui8_assist_level == 3) ui8_tx_buffer[1] = 0x04;
-      if (ui8_assist_level == 4) ui8_tx_buffer[1] = 0x08;
+      if (configuration_variables.ui8_assist_level == 1) ui8_tx_buffer[1] = 0x40;
+      if (configuration_variables.ui8_assist_level == 2) ui8_tx_buffer[1] = 0x02;
+      if (configuration_variables.ui8_assist_level == 3) ui8_tx_buffer[1] = 0x04;
+      if (configuration_variables.ui8_assist_level == 4) ui8_tx_buffer[1] = 0x08;
 
       ui8_tx_buffer[2] = 0x00;
       ui8_tx_buffer[3] = 0x1C;
@@ -188,30 +175,32 @@ int main (void)
 
       // enable UART2 receive interrupt as we are now ready to receive a new package
       UART2->CR2 |= (1 << 5);
-
-      enableInterrupts ();
     }
 
 
     if (get_lcd_button_up_state ())
     {
-      if (ui8_assist_level < 4)
-        ui8_assist_level++;
+      if (configuration_variables.ui8_assist_level < 4)
+        configuration_variables.ui8_assist_level++;
 
       while (get_lcd_button_up_state ()) ;
 
-      lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
+      lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
     }
 
     if (get_lcd_button_down_state ())
     {
-      if (ui8_assist_level > 0)
-        ui8_assist_level--;
+      if (configuration_variables.ui8_assist_level > 0)
+        configuration_variables.ui8_assist_level--;
 
       while (get_lcd_button_down_state ()) ;
 
-      lcd_print (ui8_assist_level, ASSIST_LEVEL_FIELD);
+      lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
     }
+
+    // now write values to EEPROM, but only if one of them changed
+    eeprom_write_if_values_changed ();
+
 
 
 //    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
@@ -249,7 +238,7 @@ int main (void)
   return 0;
 }
 
-// This is the interrupt that happesn when UART2 receives data. We need it to be the fastest possible and so
+// This is the interrupt that happens when UART2 receives data. We need it to be the fastest possible and so
 // we do: receive every byte and assembly as a package, finally, signal that we have a package to process (on main slow loop)
 // and disable the interrupt. The interrupt should be enable again on main loop, after the package being processed
 void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
@@ -285,7 +274,6 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
         ui8_state_machine = 0;
         ui8_received_package_flag = 1; // signal that we have a full package to be processed
         UART2->CR2 &= ~(1 << 5); // disable UART2 receive interrupt
-        disableInterrupts ();
       }
       break;
 
@@ -303,4 +291,9 @@ uint8_t get_lcd_button_up_state (void)
 uint8_t get_lcd_button_down_state (void)
 {
   return GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN) != 0 ? 0: 1;
+}
+
+struct_configuration_variables* get_configuration_variables (void)
+{
+  return &configuration_variables;
 }
