@@ -15,6 +15,8 @@
 #include "lcd.h"
 #include "uart.h"
 #include "eeprom.h"
+#include "button.h"
+#include "ht162.h"
 
 // With SDCC, interrupt service routine function prototypes must be placed in the file that contains main ()
 // in order for an vector for the interrupt to be placed in the the interrupt vector space.  It's acceptable
@@ -56,9 +58,6 @@ struct_configuration_variables configuration_variables;
 // UART2 Receive interrupt
 void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
 
-uint8_t get_lcd_button_up_state (void);
-uint8_t get_lcd_button_down_state (void);
-
 // main -- start of firmware and main loop
 int main (void);
 
@@ -86,17 +85,16 @@ int main (void)
   timer3_init ();
   uart2_init ();
 //  adc_init ();
-
   eeprom_init ();
 
+  ht1622_init ();
   lcd_init ();
-  lcd_clear_frame_buffer ();
-  lcd_send_frame_buffer();
+
 
   lcd_enable_odometer_point_symbol (1);
-
   lcd_print (0, ODOMETER_FIELD);
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
+  lcd_send_frame_buffer ();
 
   TIM1_SetCompare4 (10);
 
@@ -129,7 +127,7 @@ int main (void)
         //ui8_rx_buffer[2] == 8 if torque sensor
         //ui8_rx_buffer[2] == 4 if motor running
 
-        lcd_print (ui8_battery_current_filtered << 1, ODOMETER_FIELD);
+//        lcd_print (ui8_battery_current_filtered << 1, ODOMETER_FIELD);
       }
 
       // send the packet from LCD to motor controller
@@ -177,26 +175,36 @@ int main (void)
       UART2->CR2 |= (1 << 5);
     }
 
+    if (get_button_up_state () && get_button_down_state ())
+    {
+      while (get_button_up_state () || get_button_down_state ()) ;
 
-    if (get_lcd_button_up_state ())
+      lcd_print (9, ODOMETER_FIELD);
+      lcd_send_frame_buffer ();
+    }
+
+    if (get_button_up_state ())
     {
       if (configuration_variables.ui8_assist_level < 4)
         configuration_variables.ui8_assist_level++;
 
-      while (get_lcd_button_up_state ()) ;
+      while (get_button_up_state () && !get_button_down_state ()) ;
 
       lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
     }
 
-    if (get_lcd_button_down_state ())
+    if (get_button_down_state ())
     {
       if (configuration_variables.ui8_assist_level > 0)
         configuration_variables.ui8_assist_level--;
 
-      while (get_lcd_button_down_state ()) ;
+      while (get_button_down_state () && !get_button_up_state ()) ;
 
       lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
     }
+
+    lcd_send_frame_buffer ();
+
 
     // now write values to EEPROM, but only if one of them changed
     eeprom_write_if_values_changed ();
@@ -233,6 +241,35 @@ int main (void)
 //
 //      while (get_lcd_button_down_state ()) ;
 //    }
+
+
+//    // because of continue; at the end of each if code block that will stop the while (1) loop there,
+//    // the first if block code will have the higher priority over any others
+//    ui16_TIM2_counter = TIM2_GetCounter ();
+//    if ((ui16_TIM2_counter - ui16_ebike_app_controller_counter) > 100) // every 100ms
+//    {
+//      ui16_ebike_app_controller_counter = ui16_TIM2_counter;
+//      // ebike_app_controller() takes about 13ms (measured at 2018.03)
+//      ebike_app_controller ();
+//      continue;
+//    }
+
+#ifdef DEBUG_UART
+    ui16_TIM2_counter = TIM2_GetCounter ();
+    if ((ui16_TIM2_counter - ui16_debug_uart_counter) > 20) // every 20ms
+    {
+      ui16_debug_uart_counter = ui16_TIM2_counter;
+
+      // sugestion: no more than 6 variables printed (takes about 3ms to printf 6 variables)
+      printf ("%d,%d,%d,%d,%d\n",
+        ui8_duty_cycle_target,
+        ui8_duty_cycle,
+        ui16_motor_get_motor_speed_erps(),
+        UI8_ADC_BATTERY_CURRENT,
+        ui8_angle_correction);
+      continue;
+    }
+#endif
   }
 
   return 0;
@@ -281,16 +318,6 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       break;
     }
   }
-}
-
-uint8_t get_lcd_button_up_state (void)
-{
-  return GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN) != 0 ? 0: 1;
-}
-
-uint8_t get_lcd_button_down_state (void)
-{
-  return GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN) != 0 ? 0: 1;
 }
 
 struct_configuration_variables* get_configuration_variables (void)

@@ -37,13 +37,15 @@ EXTRASRCS = \
 	$(SDIR)/stm8s_uart2.c \
 	$(SDIR)/stm8s_flash.c \
 	gpio.c \
+	ht162.c \
 	adc.c \
 	timers.c \
 	lcd.c \
 	uart.c \
 	eeprom.c \
+	button.c \
 
-HEADERS = gpio.h main.h adc.h timers.h lcd.h uart.h eeprom.h
+HEADERS = gpio.h main.h adc.h timers.h lcd.h uart.h eeprom.h ht162.h button.h pins.h
 
 # The list of .rel files can be derived from the list of their source files
 RELS = $(EXTRASRCS:.c=.rel)

@@ -8,7 +8,7 @@
 
 #include "stm8s.h"
 #include "stm8s_gpio.h"
-#include "gpio.h"
+#include "pins.h"
 
 void gpio_init (void)
 {
