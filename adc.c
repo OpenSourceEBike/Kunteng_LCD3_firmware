@@ -44,8 +44,8 @@ uint16_t ui16_adc_read_battery_voltage_10b (void)
   uint8_t templ;
 
   // 0x53E0 + 2*8 = 0x53F8
-  templ = *(uint8_t*)(0x53F9);
-  temph = *(uint8_t*)(0x53F8);
+  templ = *(uint8_t*)(0x53F1);
+  temph = *(uint8_t*)(0x53F0);
 
   return ((uint16_t) temph) << 2 | ((uint16_t) templ);
 }

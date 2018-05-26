@@ -104,3 +104,41 @@ void lcd_enable_odometer_point_symbol (uint8_t ui8_state)
   else
     ui8_lcd_frame_buffer[6] &= ~8;
 }
+
+void lcd_enable_brake_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[23] |= 4;
+  else
+    ui8_lcd_frame_buffer[23] &= ~4;
+}
+
+void lcd_enable_lights_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[23] |= 2;
+  else
+    ui8_lcd_frame_buffer[23] &= ~2;
+}
+
+void lcd_enable_battery_symbols (uint8_t ui8_state)
+{
+
+  ui8_lcd_frame_buffer[23] |= 16;  // empty
+  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
+  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
+  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
+  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
+
+//  switch (ui8_state)
+//  {
+//    case 0:
+//
+//
+//  }
+//
+//
+}
+
+
+// : from timer label ui8_lcd_frame_buffer[23] |= 8

@@ -14,5 +14,6 @@
 
 uint8_t get_button_up_state (void);
 uint8_t get_button_down_state (void);
+uint8_t get_button_onnoff_state (void);
 
 #endif /* _BUTTON_H_ */

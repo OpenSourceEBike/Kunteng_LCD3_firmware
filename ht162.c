@@ -101,7 +101,7 @@ void ht1622_send_frame_buffer (uint8_t *p_lcd_frame_buffer)
   ui8_counter++;
 
   // send the rest of the frame buffer
-  ui8_len = LCD_FRAME_BUFFER_SIZE - 1;
+  ui8_len = (LCD_FRAME_BUFFER_SIZE << 1) - 1;
   while (ui8_len > 0)
   {
     ui8_len--;

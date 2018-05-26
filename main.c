@@ -70,8 +70,6 @@ int main (void)
   uint8_t ui8_button_down_state;
   uint8_t ui8_back_light_duty_cyle = 0;
 
-  static uint8_t ui8_debug;
-
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
 
@@ -96,12 +94,45 @@ int main (void)
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
   lcd_send_frame_buffer ();
 
+  while  (1) ;
+
+//  ui8_lcd_frame_buffer[23] |= 1;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 2;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 4;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 8;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 16;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 32;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 64;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[23] |= 128;
+//  lcd_send_frame_buffer ();
+
   TIM1_SetCompare4 (10);
 
   enableInterrupts ();
 
   while (1)
   {
+
+
+//      lcd_print (ui16_adc_read_battery_voltage_10b (), ODOMETER_FIELD);
+//      lcd_send_frame_buffer ();
+
+//
+//
     // see if we have a received package from UART, to be processed
     if (ui8_received_package_flag)
     {
@@ -126,6 +157,18 @@ int main (void)
 
         //ui8_rx_buffer[2] == 8 if torque sensor
         //ui8_rx_buffer[2] == 4 if motor running
+
+
+        // 64 no brake
+        // 80 brake
+        if (ui8_rx_buffer[3] == 80)
+          lcd_enable_brake_symbol (1);
+        else
+          lcd_enable_brake_symbol (0);
+
+        lcd_print (0, ODOMETER_FIELD);
+        lcd_send_frame_buffer ();
+
 
 //        lcd_print (ui8_battery_current_filtered << 1, ODOMETER_FIELD);
       }
@@ -179,7 +222,7 @@ int main (void)
     {
       while (get_button_up_state () || get_button_down_state ()) ;
 
-      lcd_print (9, ODOMETER_FIELD);
+      lcd_enable_brake_symbol (1);
       lcd_send_frame_buffer ();
     }
 
@@ -187,6 +230,8 @@ int main (void)
     {
       if (configuration_variables.ui8_assist_level < 4)
         configuration_variables.ui8_assist_level++;
+
+      lcd_enable_brake_symbol (0);
 
       while (get_button_up_state () && !get_button_down_state ()) ;
 
@@ -198,9 +243,18 @@ int main (void)
       if (configuration_variables.ui8_assist_level > 0)
         configuration_variables.ui8_assist_level--;
 
+      lcd_enable_brake_symbol (0);
+
       while (get_button_down_state () && !get_button_up_state ()) ;
 
       lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
+    }
+
+    if (get_button_onnoff_state ())
+    {
+      lcd_enable_w_symbol (1);
+
+      while (get_button_onnoff_state ()) ;
     }
 
     lcd_send_frame_buffer ();
@@ -210,37 +264,6 @@ int main (void)
     eeprom_write_if_values_changed ();
 
 
-
-//    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN);
-//    if (ui16_temp == 0)
-//    {
-//      ui32_number += 10;
-//      lcd_print (ui32_number, ODOMETER);
-//
-//      while (!GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN)) ;
-//    }
-//
-//    ui16_temp = GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN);
-//    if (ui16_temp == 0)
-//    {
-//      ui32_number += 1;
-//      lcd_print (ui32_number, ODOMETER);
-//
-//      while (!GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN)) ;
-//    }
-//
-//    ui16_temp = get_lcd_button_down_state ();
-//    if (ui16_temp == 1)
-//    {
-//      ui8_back_light_duty_cyle += 3;
-//      if (ui8_back_light_duty_cyle >= 12) { ui8_back_light_duty_cyle = 0; }
-//      TIM1_SetCompare4(ui8_back_light_duty_cyle);
-////
-////      lcd_clear_frame_buffer();
-////      lcd_send_frame_buffer();
-//
-//      while (get_lcd_button_down_state ()) ;
-//    }
 
 
 //    // because of continue; at the end of each if code block that will stop the while (1) loop there,

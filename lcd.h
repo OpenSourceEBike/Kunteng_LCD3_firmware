@@ -15,6 +15,8 @@
 // LCD RAM has 32*8 bits
 #define LCD_FRAME_BUFFER_SIZE 32
 
+extern uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
+
 #define ASSIST_LEVEL_FIELD     0
 #define ODOMETER_FIELD         1
 
@@ -37,6 +39,7 @@
 void lcd_init (void);
 void lcd_enable_w_symbol (uint8_t ui8_state);
 void lcd_enable_odometer_point_symbol (uint8_t ui8_state);
+void lcd_enable_brake_symbol (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
