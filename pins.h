@@ -6,6 +6,10 @@
  * Released under the GPL License, Version 3
  */
 
+// Battery voltage:
+// 30.0V --> 447 | 0.0671 volts per each ADC unit
+// 40.0V --> 595 | 0.0672 volts per each ADC unit
+
 /* Connections:
  *
  * PIN		      | IN/OUT|Function

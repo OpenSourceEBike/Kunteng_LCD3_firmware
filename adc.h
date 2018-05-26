@@ -9,12 +9,9 @@
 #ifndef _ADC_H
 #define _ADC_H
 
-#include "main.h"
-
 #define ADC1_CHANNEL_BATTERY_VOLTAGE  ADC1_CHANNEL_8
 
 void adc_init (void);
 uint16_t ui16_adc_read_battery_voltage_10b (void);
-uint16_t ui16_adc_read_ain4_10b (void);
 
 #endif /* _ADC_H */

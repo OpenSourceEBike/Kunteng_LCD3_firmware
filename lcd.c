@@ -13,6 +13,11 @@
 #include "timers.h"
 #include "ht162.h"
 #include "lcd.h"
+#include "adc.h"
+#include "main.h"
+#include "config.h"
+#include "button.h"
+#include "eeprom.h"
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -30,10 +35,41 @@ uint8_t ui8_lcd_digit_mask[] = {
     NUMBER_9_MASK
 };
 
+uint16_t ui16_adc_battery_voltage_accumulated = 0;
+uint16_t ui16_adc_battery_voltage_filtered;
+
+struct_motor_controller_data motor_controller_data;
+struct_configuration_variables configuration_variables;
+
+void read_battery_voltage (void);
+
 void lcd_init (void)
 {
+  ht1622_init ();
   lcd_clear_frame_buffer ();
   lcd_send_frame_buffer();
+}
+
+void clock_lcd (void)
+{
+  static uint8_t ui8_button_events;
+  float f_battery_voltage;
+
+  // read battery voltage and low pass filter
+  read_battery_voltage ();
+
+  ui8_button_events = button_get_events ();
+
+  f_battery_voltage = ((float) ui16_adc_battery_voltage_filtered * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10);
+  lcd_print ((uint16_t) f_battery_voltage, ODOMETER_FIELD);
+  lcd_send_frame_buffer ();
+
+  // now write values to EEPROM, but only if one of them changed
+//  configuration_variables.ui8_assist_level =
+//  configuration_variables.ui8_max_speed
+//  configuration_variables.ui8_wheel_size
+//  configuration_variables.ui8_units_type
+//  eeprom_write_if_values_changed ();
 }
 
 void lcd_clear_frame_buffer (void)
@@ -142,3 +178,22 @@ void lcd_enable_battery_symbols (uint8_t ui8_state)
 
 
 // : from timer label ui8_lcd_frame_buffer[23] |= 8
+
+
+void read_battery_voltage (void)
+{
+  // low pass filter the voltage readed value, to avoid possible fast spikes/noise
+  ui16_adc_battery_voltage_accumulated -= ui16_adc_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+  ui16_adc_battery_voltage_accumulated += ((uint16_t) ui16_adc_read_battery_voltage_10b ());
+  ui16_adc_battery_voltage_filtered = ui16_adc_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+}
+
+struct_configuration_variables* get_configuration_variables (void)
+{
+  return &configuration_variables;
+}
+
+struct_motor_controller_data* lcd_get_motor_controller_data (void)
+{
+  return &motor_controller_data;
+}

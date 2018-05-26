@@ -11,6 +11,7 @@
 #include "stm8s_flash.h"
 #include "eeprom.h"
 #include "main.h"
+#include "lcd.h"
 
 struct_configuration_variables *p_configuration_variables;
 
@@ -24,6 +25,7 @@ void eeprom_init (void)
     KEY,
     DEFAULT_VALUE_ASSIST_LEVEL,
     DEFAULT_VALUE_WHEEL_SIZE,
+    DEFAULT_VALUE_MAX_SPEED,
     DEFAULT_VALUE_MAX_SPEED,
   };
   uint8_t ui8_data;
@@ -48,6 +50,7 @@ void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_assist_level = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL);
   p_configuration_variables->ui8_wheel_size = FLASH_ReadByte (ADDRESS_WHEEL_SIZE);
   p_configuration_variables->ui8_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
+  p_configuration_variables->ui8_units_type = FLASH_ReadByte (ADDRESS_UNITS_TYPE);
 }
 
 void eeprom_write_if_values_changed (void)
@@ -57,12 +60,14 @@ void eeprom_write_if_values_changed (void)
   // see if the values differ from the ones on EEPROM and if so, write all of them to EEPROM
   if ((p_configuration_variables->ui8_assist_level != FLASH_ReadByte (ADDRESS_ASSIST_LEVEL)) ||
       (p_configuration_variables->ui8_wheel_size != FLASH_ReadByte (ADDRESS_WHEEL_SIZE)) ||
-      (p_configuration_variables->ui8_max_speed != FLASH_ReadByte (ADDRESS_MAX_SPEED)))
+      (p_configuration_variables->ui8_max_speed != FLASH_ReadByte (ADDRESS_MAX_SPEED)) ||
+      (p_configuration_variables->ui8_units_type != FLASH_ReadByte (ADDRESS_UNITS_TYPE)))
   {
     array_values [0] = KEY;
     array_values [1] = p_configuration_variables->ui8_assist_level;
     array_values [2] = p_configuration_variables->ui8_wheel_size;
     array_values [3] = p_configuration_variables->ui8_max_speed;
+    array_values [4] = p_configuration_variables->ui8_units_type;
 
     eeprom_write_array (array_values);
   }

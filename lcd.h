@@ -12,6 +12,32 @@
 #include "main.h"
 #include "stm8s_gpio.h"
 
+//ui8_rx_buffer[2] == 8 if torque sensor
+//ui8_rx_buffer[2] == 4 if motor running
+typedef struct _motor_controller_data
+{
+  uint8_t ui8_battery_level;
+  uint8_t ui8_motor_state;
+  uint8_t ui8_pedal_torque_sensor_offset;
+  uint8_t ui8_pedal_torque_sensor;
+  uint8_t ui8_error_code;
+  uint8_t ui8_wheel_rps;
+  uint8_t ui8_battery_current;
+  uint8_t ui8_brake_state;
+  uint8_t ui8_assist_level;
+  uint8_t ui8_wheel_size;
+  uint8_t ui8_max_speed;
+  uint8_t ui8_units_type;
+} struct_motor_controller_data;
+
+typedef struct _configuration_variables
+{
+  uint8_t ui8_assist_level;
+  uint8_t ui8_wheel_size;
+  uint8_t ui8_max_speed;
+  uint8_t ui8_units_type;
+} struct_configuration_variables;
+
 // LCD RAM has 32*8 bits
 #define LCD_FRAME_BUFFER_SIZE 32
 
@@ -43,5 +69,8 @@ void lcd_enable_brake_symbol (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
+void clock_lcd (void);
+struct_configuration_variables* get_configuration_variables (void);
+struct_motor_controller_data* lcd_get_motor_controller_data (void);
 
 #endif /* _LCD_H_ */

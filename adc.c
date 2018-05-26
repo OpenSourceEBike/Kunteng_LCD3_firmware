@@ -21,7 +21,7 @@ void adc_init (void)
 
   //init ADC1 peripheral
   ADC1_Init(ADC1_CONVERSIONMODE_SINGLE,
-      ADC1_CHANNEL_8,
+      ADC1_CHANNEL_BATTERY_VOLTAGE,
       ADC1_PRESSEL_FCPU_D18,
       ADC1_EXTTRIG_TIM,
       DISABLE,

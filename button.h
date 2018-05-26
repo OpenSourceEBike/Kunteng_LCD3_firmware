@@ -15,5 +15,7 @@
 uint8_t get_button_up_state (void);
 uint8_t get_button_down_state (void);
 uint8_t get_button_onnoff_state (void);
+void clock_button (void);
+uint8_t button_get_events (void);
 
 #endif /* _BUTTON_H_ */

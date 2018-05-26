@@ -20,18 +20,10 @@
 
 // *************************************************************************** //
 // EEPROM memory variables default values
-#define DEFAULT_VALUE_ASSIST_LEVEL   1
-#define DEFAULT_VALUE_WHEEL_SIZE    20 // 26''
-#define DEFAULT_VALUE_MAX_SPEED     25
+#define DEFAULT_VALUE_ASSIST_LEVEL   2
+#define DEFAULT_VALUE_WHEEL_SIZE    26
+#define DEFAULT_VALUE_MAX_SPEED     45
+#define DEFAULT_VALUE_UNITS_TYPE     0 // 0 = km/h
 // *************************************************************************** //
-
-typedef struct _configuration_variables
-{
-  uint8_t ui8_assist_level;
-  uint8_t ui8_wheel_size;
-  uint8_t ui8_max_speed;
-} struct_configuration_variables;
-
-struct_configuration_variables* get_configuration_variables (void);
 
 #endif // _MAIN_H_

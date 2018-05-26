@@ -18,7 +18,8 @@
 #define ADDRESS_ASSIST_LEVEL 			          1 + EEPROM_BASE_ADDRESS
 #define ADDRESS_WHEEL_SIZE	 		            2 + EEPROM_BASE_ADDRESS
 #define ADDRESS_MAX_SPEED	 		              3 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                 4
+#define ADDRESS_UNITS_TYPE                  4 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                 5
 
 void eeprom_init (void);
 void eeprom_write_if_values_changed (void);
