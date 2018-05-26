@@ -53,7 +53,7 @@ int main (void)
   uart2_init ();
   adc_init ();
   eeprom_init ();
-  lcd_init ();
+  lcd_init (); // must be after eeprom_init ();
   enableInterrupts ();
 
   TIM1_SetCompare4 (10);

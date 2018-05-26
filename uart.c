@@ -15,12 +15,14 @@
 #include "lcd.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[9];
+volatile uint8_t ui8_rx_buffer[21];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[7];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
+volatile uint8_t ui8_checksum_1st_package;
+volatile uint8_t ui8_checksum_2nd_package;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 
@@ -42,6 +44,9 @@ void uart2_init (void)
 // and disable the interrupt. The interrupt should be enable again on main loop, after the package being processed
 void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
 {
+  static uint8_t _ui8_rx_buffer[21];
+
+
   if(UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET)
   {
     ui8_byte_received = UART2_ReceiveData8 ();
@@ -52,6 +57,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       if (ui8_byte_received == 67) // see if we get start package byte
       {
         ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
+_ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
         ui8_rx_counter++;
         ui8_state_machine = 1;
       }
@@ -64,10 +70,11 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
 
       case 1:
       ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
+_ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
       ui8_rx_counter++;
 
       // see if is the last byte of the package
-      if (ui8_rx_counter > 9)
+      if (ui8_rx_counter > 21)
       {
         ui8_rx_counter = 0;
         ui8_state_machine = 0;
@@ -88,19 +95,30 @@ void clock_uart_data (void)
 
   if (ui8_received_package_flag)
   {
-    // validation of the package data
+    // validation of the 1st package data
     // last byte is the checksum
     ui8_checksum = 0;
     for (ui8_i = 0; ui8_i <= 7; ui8_i++)
     {
       ui8_checksum += ui8_rx_buffer[ui8_i];
     }
-    ui8_checksum = ui8_checksum % 256;
+    ui8_checksum_1st_package = ui8_checksum % 256;
+    if (ui8_checksum_1st_package == ui8_rx_buffer [8]) { ui8_checksum_1st_package = 1; }
+    else { ui8_checksum_1st_package = 0; }
 
-    // see if checksum is ok
-    // NOTE: seems the firmware always send checksum = 0
-//      if (ui8_checksum == ui8_rx_buffer [8])
-    if (1)
+    // validation of the 2nd package data
+    // last byte is the checksum
+    ui8_checksum = 0;
+    for (ui8_i = 9; ui8_i <= 19; ui8_i++)
+    {
+      ui8_checksum += ui8_rx_buffer[ui8_i];
+    }
+    ui8_checksum_2nd_package = ui8_checksum % 256;
+    if (ui8_checksum_2nd_package == ui8_rx_buffer [20]) { ui8_checksum_2nd_package = 1; }
+    else { ui8_checksum_2nd_package = 0; }
+
+    // see if both checksum are ok...
+    if (ui8_checksum_1st_package && ui8_checksum_2nd_package)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
 
@@ -109,7 +127,9 @@ void clock_uart_data (void)
       p_motor_controller_data->ui8_pedal_torque_sensor_offset = ui8_rx_buffer[3];
       p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[4];
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[5];
-      p_motor_controller_data->ui8_wheel_rps = ui8_rx_buffer[6] << 8 + ui8_rx_buffer[7];
+      p_motor_controller_data->ui16_wheel_rps = ui8_rx_buffer[6] << 8 + ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[10];
+      p_motor_controller_data->ui8_brake_state = ui8_rx_buffer[11];
 
       // now send the data to the motor controller
       // start up byte

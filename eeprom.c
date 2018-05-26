@@ -26,7 +26,7 @@ void eeprom_init (void)
     DEFAULT_VALUE_ASSIST_LEVEL,
     DEFAULT_VALUE_WHEEL_SIZE,
     DEFAULT_VALUE_MAX_SPEED,
-    DEFAULT_VALUE_MAX_SPEED,
+    DEFAULT_VALUE_UNITS_TYPE,
   };
   uint8_t ui8_data;
   p_configuration_variables = get_configuration_variables ();

@@ -21,7 +21,15 @@
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
-uint8_t ui8_lcd_field_offset[] = { ASSIST_LEVEL_DIGIT_OFFSET, ODOMETER_DIGIT_OFFSET, 0, 0, 0, 0 };
+uint8_t ui8_lcd_field_offset[] = {
+    ASSIST_LEVEL_DIGIT_OFFSET,
+    ODOMETER_DIGIT_OFFSET,
+    WHEEL_SPEED_OFFSET,
+    BATTERY_POWER_DIGIT_OFFSET,
+    0,
+    0
+};
+
 uint8_t ui8_lcd_digit_mask[] = {
     NUMBER_0_MASK,
     NUMBER_1_MASK,
@@ -33,6 +41,19 @@ uint8_t ui8_lcd_digit_mask[] = {
     NUMBER_7_MASK,
     NUMBER_8_MASK,
     NUMBER_9_MASK
+};
+
+uint8_t ui8_lcd_digit_mask_inverted[] = {
+    NUMBER_0_MASK_INVERTED,
+    NUMBER_1_MASK_INVERTED,
+    NUMBER_2_MASK_INVERTED,
+    NUMBER_3_MASK_INVERTED,
+    NUMBER_4_MASK_INVERTED,
+    NUMBER_5_MASK_INVERTED,
+    NUMBER_6_MASK_INVERTED,
+    NUMBER_7_MASK_INVERTED,
+    NUMBER_8_MASK_INVERTED,
+    NUMBER_9_MASK_INVERTED
 };
 
 uint16_t ui16_adc_battery_voltage_accumulated = 0;
@@ -48,12 +69,19 @@ void lcd_init (void)
   ht1622_init ();
   lcd_clear_frame_buffer ();
   lcd_send_frame_buffer();
+
+  // init variables with the stored value on EEPROM
+  motor_controller_data.ui8_assist_level = configuration_variables.ui8_assist_level;
+  motor_controller_data.ui8_wheel_size = configuration_variables.ui8_wheel_size;
+  motor_controller_data.ui8_max_speed = configuration_variables.ui8_max_speed;
+  motor_controller_data.ui8_units_type = configuration_variables.ui8_units_type;
 }
 
 void clock_lcd (void)
 {
   static uint8_t ui8_button_events;
   float f_battery_voltage;
+  float f_battery_power;
 
   // read battery voltage and low pass filter
   read_battery_voltage ();
@@ -61,7 +89,12 @@ void clock_lcd (void)
   ui8_button_events = button_get_events ();
 
   f_battery_voltage = ((float) ui16_adc_battery_voltage_filtered * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10);
+  f_battery_power = (float) motor_controller_data.ui8_battery_current * 5.0 * f_battery_voltage;
+
+  lcd_enable_vol_symbol (1);
+  lcd_enable_w_symbol (1);
   lcd_print ((uint16_t) f_battery_voltage, ODOMETER_FIELD);
+  lcd_print (f_battery_power, BATTERY_POWER_FIELD);
   lcd_send_frame_buffer ();
 
   // now write values to EEPROM, but only if one of them changed
@@ -90,12 +123,25 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
   // first delete the field
   for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
   {
-    ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= NUMBERS_MASK;
+    if (ui8_lcd_field == ASSIST_LEVEL_FIELD ||
+            ui8_lcd_field == ODOMETER_FIELD)
+    {
+      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= NUMBERS_MASK;
+    }
 
-    if (ui8_counter == 0 && ui8_lcd_field == 0) break;
-    if (ui8_counter == 4 && ui8_lcd_field == 1) break;
-    if (ui8_counter == 1 && ui8_lcd_field == 2) break;
-    if (ui8_counter == 2 && ui8_lcd_field == 3) break;
+    // because the LCD mask/layout is different on some field, like numbers would be inverted
+    if (ui8_lcd_field == WHEEL_SPEED_FIELD ||
+        ui8_lcd_field == BATTERY_POWER_FIELD)
+    {
+      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= NUMBERS_MASK;
+    }
+
+
+    // limit the number of printed digits for each field
+    if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
+    if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
+    if (ui8_counter == 1 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
+    if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;
     if (ui8_counter == 4 && ui8_lcd_field == 5) break;
   }
@@ -105,24 +151,53 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
   {
     ui8_digit = ui32_number % 10;
 
-    // print only first 2 zeros
-    if (ui8_counter > 1 && ui32_number == 0)
+    if (ui8_lcd_field == ASSIST_LEVEL_FIELD ||
+        ui8_lcd_field == ODOMETER_FIELD)
     {
-      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
-    }
-    else
-    {
-      ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] |= ui8_lcd_digit_mask[ui8_digit];
+      // print only first 2 zeros
+      if (ui8_counter > 1 && ui32_number == 0)
+      {
+        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+      }
+      else
+      {
+        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] |= ui8_lcd_digit_mask[ui8_digit];
+      }
     }
 
-    if (ui8_counter == 0 && ui8_lcd_field == 0) break;
-    if (ui8_counter == 1 && ui8_lcd_field == 2) break;
-    if (ui8_counter == 2 && ui8_lcd_field == 3) break;
+    // because the LCD mask/layout is different on some field, like numbers would be inverted
+    if (ui8_lcd_field == WHEEL_SPEED_FIELD ||
+        ui8_lcd_field == BATTERY_POWER_FIELD)
+    {
+      // print only first zero
+      if (ui8_counter > 0 && ui32_number == 0)
+      {
+        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+      }
+      else
+      {
+        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] |= ui8_lcd_digit_mask_inverted[ui8_digit];
+      }
+    }
+
+    // limit the number of printed digits for each field
+    if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
+    if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
+    if (ui8_counter == 1 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
+    if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;
     if (ui8_counter == 4 && ui8_lcd_field == 5) break;
 
     ui32_number /= 10;
   }
+}
+
+void lcd_enable_vol_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[2] |= 255;
+  else
+    ui8_lcd_frame_buffer[2] &= ~255;
 }
 
 void lcd_enable_w_symbol (uint8_t ui8_state)

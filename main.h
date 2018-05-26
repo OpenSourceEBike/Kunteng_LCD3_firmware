@@ -23,7 +23,7 @@
 #define DEFAULT_VALUE_ASSIST_LEVEL   2
 #define DEFAULT_VALUE_WHEEL_SIZE    26
 #define DEFAULT_VALUE_MAX_SPEED     45
-#define DEFAULT_VALUE_UNITS_TYPE     0 // 0 = km/h
+#define DEFAULT_VALUE_UNITS_TYPE     1 // 1 = km/h
 // *************************************************************************** //
 
 #endif // _MAIN_H_
