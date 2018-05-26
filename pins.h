@@ -48,8 +48,8 @@
 
 #define LCD3_BUTTON_UP__PORT                    GPIOB
 #define LCD3_BUTTON_UP__PIN                     GPIO_PIN_1
-#define LCD3_BUTTON_ONOFF__PORT                 GPIOB
-#define LCD3_BUTTON_ONOFF__PIN                  GPIO_PIN_0
+#define LCD3_BUTTON_ONOFF__PORT                 GPIOG
+#define LCD3_BUTTON_ONOFF__PIN                  GPIO_PIN_1
 #define LCD3_BUTTON_DOWN__PORT                  GPIOB
 #define LCD3_BUTTON_DOWN__PIN                   GPIO_PIN_2
 

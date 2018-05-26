@@ -14,7 +14,7 @@ void gpio_init (void)
 {
   GPIO_Init(LCD3_BUTTON_ONOFF__PORT,
             LCD3_BUTTON_ONOFF__PIN,
-            GPIO_MODE_IN_PU_NO_IT);
+            GPIO_MODE_IN_FL_NO_IT);
 
   GPIO_Init(LCD3_BUTTON_UP__PORT,
             LCD3_BUTTON_UP__PIN,
