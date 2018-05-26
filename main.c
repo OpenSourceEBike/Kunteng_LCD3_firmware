@@ -61,11 +61,9 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER);
 // main -- start of firmware and main loop
 int main (void);
 
-volatile static uint8_t ui8_log;
-
 int main (void)
 {
-  uint16_t ui16_temp;
+  static uint16_t ui16_temp;
   uint8_t ui8_button_up_state;
   uint8_t ui8_button_down_state;
   uint8_t ui8_back_light_duty_cyle = 0;
@@ -82,7 +80,7 @@ int main (void)
   timer1_init ();
   timer3_init ();
   uart2_init ();
-//  adc_init ();
+  adc_init ();
   eeprom_init ();
 
   ht1622_init ();
@@ -93,8 +91,6 @@ int main (void)
   lcd_print (0, ODOMETER_FIELD);
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
   lcd_send_frame_buffer ();
-
-  while  (1) ;
 
 //  ui8_lcd_frame_buffer[23] |= 1;
 //  lcd_send_frame_buffer ();
@@ -126,6 +122,8 @@ int main (void)
 
   while (1)
   {
+
+    ui16_temp = ui16_adc_read_battery_voltage_10b ();
 
 
 //      lcd_print (ui16_adc_read_battery_voltage_10b (), ODOMETER_FIELD);
