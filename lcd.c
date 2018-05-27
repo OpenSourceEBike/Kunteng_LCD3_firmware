@@ -91,10 +91,16 @@ void clock_lcd (void)
   f_battery_voltage = ((float) ui16_adc_battery_voltage_filtered * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10);
   f_battery_power = (float) motor_controller_data.ui8_battery_current * 5.0 * f_battery_voltage;
 
-  lcd_enable_vol_symbol (1);
-  lcd_enable_w_symbol (1);
   lcd_print ((uint16_t) f_battery_voltage, ODOMETER_FIELD);
+  lcd_enable_vol_symbol (1);
+
+  lcd_print (251, WHEEL_SPEED_FIELD);
+  lcd_enable_kmh_symbol (1);
+  lcd_enable_wheel_speed_point_symbol (1);
+
   lcd_print (f_battery_power, BATTERY_POWER_FIELD);
+  lcd_enable_w_symbol (1);
+
   lcd_send_frame_buffer ();
 
   // now write values to EEPROM, but only if one of them changed
@@ -136,17 +142,26 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
       ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= NUMBERS_MASK;
     }
 
-
     // limit the number of printed digits for each field
     if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
     if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
-    if (ui8_counter == 1 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
+    if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;
     if (ui8_counter == 4 && ui8_lcd_field == 5) break;
   }
 
+  if (ui8_lcd_field == BATTERY_POWER_FIELD)
+  {
+    lcd_enable_battery_power_1_symbol (0);
+  }
+
   // print digit by digit
+  if (ui8_lcd_field == BATTERY_POWER_FIELD && ui32_number >= 1000)
+  {
+    lcd_enable_battery_power_1_symbol (1);
+  }
+
   for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
   {
     ui8_digit = ui32_number % 10;
@@ -183,21 +198,13 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
     // limit the number of printed digits for each field
     if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
     if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
-    if (ui8_counter == 1 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
+    if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;
     if (ui8_counter == 4 && ui8_lcd_field == 5) break;
 
     ui32_number /= 10;
   }
-}
-
-void lcd_enable_vol_symbol (uint8_t ui8_state)
-{
-  if (ui8_state)
-    ui8_lcd_frame_buffer[2] |= 255;
-  else
-    ui8_lcd_frame_buffer[2] &= ~255;
 }
 
 void lcd_enable_w_symbol (uint8_t ui8_state)
@@ -230,6 +237,190 @@ void lcd_enable_lights_symbol (uint8_t ui8_state)
     ui8_lcd_frame_buffer[23] |= 2;
   else
     ui8_lcd_frame_buffer[23] &= ~2;
+}
+
+void lcd_enable_cruise_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[0] |= 16;
+  else
+    ui8_lcd_frame_buffer[0] &= ~16;
+}
+
+void lcd_enable_assist_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[1] |= 8;
+  else
+    ui8_lcd_frame_buffer[1] &= ~8;
+}
+
+void lcd_enable_vol_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[2] |= 8;
+  else
+    ui8_lcd_frame_buffer[2] &= ~8;
+}
+
+void lcd_enable_odo_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[3] |= 8;
+  else
+    ui8_lcd_frame_buffer[3] &= ~8;
+}
+
+void lcd_enable_km_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[4] |= 8;
+  else
+    ui8_lcd_frame_buffer[4] &= ~8;
+}
+
+void lcd_enable_mil_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[5] |= 8;
+  else
+    ui8_lcd_frame_buffer[5] &= ~8;
+}
+
+void lcd_enable_temperature_1_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[7] |= 8;
+  else
+    ui8_lcd_frame_buffer[7] &= ~8;
+}
+
+void lcd_enable_battery_power_1_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[12] |= 8;
+  else
+    ui8_lcd_frame_buffer[12] &= ~8;
+}
+
+void lcd_enable_temperature_minus_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[8] |= 8;
+  else
+    ui8_lcd_frame_buffer[8] &= ~8;
+}
+
+void lcd_enable_temperature_degrees_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 16;
+  else
+    ui8_lcd_frame_buffer[9] &= ~16;
+}
+
+void lcd_enable_temperature_farneight_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 32;
+  else
+    ui8_lcd_frame_buffer[9] &= ~32;
+}
+
+void lcd_enable_farneight_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 1;
+  else
+    ui8_lcd_frame_buffer[9] &= ~1;
+}
+
+void lcd_enable_motor_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 2;
+  else
+    ui8_lcd_frame_buffer[9] &= ~2;
+}
+
+void lcd_enable_degrees_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[9] |= 64;
+  else
+    ui8_lcd_frame_buffer[9] &= ~64;
+}
+
+void lcd_enable_kmh_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 1;
+  else
+    ui8_lcd_frame_buffer[13] &= ~1;
+}
+
+void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 8;
+  else
+    ui8_lcd_frame_buffer[13] &= ~8;
+}
+
+void lcd_enable_avs_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 16;
+  else
+    ui8_lcd_frame_buffer[13] &= ~16;
+}
+
+void lcd_enable_mxs_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 32;
+  else
+    ui8_lcd_frame_buffer[13] &= ~32;
+}
+
+void lcd_enable_walk_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 64;
+  else
+    ui8_lcd_frame_buffer[13] &= ~64;
+}
+
+void lcd_enable_mph_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[13] |= 128;
+  else
+    ui8_lcd_frame_buffer[13] &= ~128;
+}
+
+void lcd_enable_dst_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[16] |= 8;
+  else
+    ui8_lcd_frame_buffer[16] &= ~8;
+}
+
+void lcd_enable_tm_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[17] |= 16;
+  else
+    ui8_lcd_frame_buffer[17] &= ~16;
+}
+
+void lcd_enable_ttm_symbol (uint8_t ui8_state)
+{
+  if (ui8_state)
+    ui8_lcd_frame_buffer[17] |= 32;
+  else
+    ui8_lcd_frame_buffer[17] &= ~32;
 }
 
 void lcd_enable_battery_symbols (uint8_t ui8_state)

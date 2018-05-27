@@ -44,6 +44,7 @@ int main (void)
 {
   uint16_t ui16_tim3_counter;
   uint16_t ui16_10ms_loop_counter;
+  uint8_t ui8_t;
 
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);
@@ -61,6 +62,35 @@ int main (void)
   lcd_send_frame_buffer ();
 
   ui16_tim3_counter = TIM3_GetCounter ();
+
+//
+//  ui8_t = 2;
+//  ui8_lcd_frame_buffer[ui8_t] |= 1;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 2;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 4;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 8;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 16;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 32;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 64;
+//  lcd_send_frame_buffer ();
+//
+//  ui8_lcd_frame_buffer[ui8_t] |= 128;
+//  lcd_send_frame_buffer ();
+
+
+
 
   while (1)
   {

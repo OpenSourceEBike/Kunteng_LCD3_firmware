@@ -50,9 +50,9 @@ extern uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
 // each digit needs 7 bits to be defined + 1 digit that can be another symbol like a "point"
 #define ASSIST_LEVEL_DIGIT_OFFSET     1 // 8
-#define ODOMETER_DIGIT_OFFSET         6 // 48
-#define WHEEL_SPEED_OFFSET            6 // 48
-#define BATTERY_POWER_DIGIT_OFFSET    10 //
+#define ODOMETER_DIGIT_OFFSET         6
+#define WHEEL_SPEED_OFFSET            14
+#define BATTERY_POWER_DIGIT_OFFSET    10
 
 #define NUMBERS_MASK              8
 #define NUMBER_0_MASK             119
@@ -81,6 +81,10 @@ void lcd_enable_vol_symbol (uint8_t ui8_state);
 void lcd_enable_w_symbol (uint8_t ui8_state);
 void lcd_enable_odometer_point_symbol (uint8_t ui8_state);
 void lcd_enable_brake_symbol (uint8_t ui8_state);
+void lcd_enable_assist_symbol (uint8_t ui8_state);
+void lcd_enable_battery_power_1_symbol (uint8_t ui8_state);
+void lcd_enable_kmh_symbol (uint8_t ui8_state);
+void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
