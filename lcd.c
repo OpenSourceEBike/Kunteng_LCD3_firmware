@@ -110,6 +110,7 @@ void clock_lcd (void)
 //      motor_controller_data.ui8_assist_level++;
 //  }
 
+  // assist level
   if (get_button_up_state ())
   {
     if (motor_controller_data.ui8_assist_level < 4)
@@ -126,10 +127,22 @@ void clock_lcd (void)
     while (get_button_down_state ()) ;
   }
 
+  // brake
+  if (motor_controller_data.ui8_motor_controller_state_2 & 1)
+  {
+    lcd_enable_brake_symbol (1);
+  }
+  else
+  {
+    lcd_enable_brake_symbol (0);
+  }
+
   // show on LCD only at every 20ms / 5 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 20)
   {
     ui8_timmer_counter = 0;
+
+    lcd_enable_battery_symbols (motor_controller_data.ui8_battery_level);
 
     lcd_print (motor_controller_data.ui8_assist_level, ASSIST_LEVEL_FIELD);
     lcd_enable_assist_symbol (1);
@@ -491,21 +504,37 @@ void lcd_enable_ttm_symbol (uint8_t ui8_state)
 
 void lcd_enable_battery_symbols (uint8_t ui8_state)
 {
+//  ui8_lcd_frame_buffer[23] |= 16;  // empty
+//  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
+//  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
+//  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
+//  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
 
-  ui8_lcd_frame_buffer[23] |= 16;  // empty
-  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
-  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
-  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
-  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
+  switch (ui8_state)
+  {
+    case 2:
+    ui8_lcd_frame_buffer[23] |= 16;
+    break;
 
-//  switch (ui8_state)
-//  {
-//    case 0:
-//
-//
-//  }
-//
-//
+    case 4:
+    ui8_lcd_frame_buffer[23] |= 144;
+    break;
+
+    case 6:
+    ui8_lcd_frame_buffer[23] |= 145;
+    break;
+
+    case 8:
+    ui8_lcd_frame_buffer[23] |= 209;
+    break;
+
+    case 16:
+    ui8_lcd_frame_buffer[23] |= 241;
+    break;
+
+    default:
+    break;
+  }
 }
 
 

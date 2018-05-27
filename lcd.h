@@ -85,6 +85,7 @@ void lcd_enable_assist_symbol (uint8_t ui8_state);
 void lcd_enable_battery_power_1_symbol (uint8_t ui8_state);
 void lcd_enable_kmh_symbol (uint8_t ui8_state);
 void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
+void lcd_enable_battery_symbols (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
