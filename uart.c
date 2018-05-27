@@ -123,13 +123,17 @@ void clock_uart_data (void)
       p_motor_controller_data = lcd_get_motor_controller_data ();
 
       p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1];
-      p_motor_controller_data->ui8_motor_state = ui8_rx_buffer[2];
+      p_motor_controller_data->ui8_motor_controller_state_1 = ui8_rx_buffer[2];
       p_motor_controller_data->ui8_pedal_torque_sensor_offset = ui8_rx_buffer[3];
       p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[4];
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[5];
-      p_motor_controller_data->ui16_wheel_rps = ui8_rx_buffer[6] << 8 + ui8_rx_buffer[7];
+      p_motor_controller_data->ui16_wheel_inverse_rps = ((ui8_rx_buffer[7] << 6) & 192) + ((ui8_rx_buffer[6] >> 3) & 31);
       p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[10];
-      p_motor_controller_data->ui8_brake_state = ui8_rx_buffer[11];
+      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[11];
+
+      // ui8_rx_buffer[7] & 4 set means wheel is stopped
+      if (ui8_rx_buffer[7] & 4) { p_motor_controller_data->ui8_motor_controller_state_2 |= 128; }
+      else { p_motor_controller_data->ui8_motor_controller_state_2 &= ~128; }
 
       // now send the data to the motor controller
       // start up byte
