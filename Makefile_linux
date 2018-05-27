@@ -45,7 +45,7 @@ EXTRASRCS = \
 	eeprom.c \
 	button.c \
 
-HEADERS = gpio.h main.h adc.h timers.h lcd.h uart.h eeprom.h ht162.h button.h pins.h
+HEADERS = gpio.h main.h adc.h timers.h lcd.h uart.h eeprom.h ht162.h button.h pins.h config.h
 
 # The list of .rel files can be derived from the list of their source files
 RELS = $(EXTRASRCS:.c=.rel)

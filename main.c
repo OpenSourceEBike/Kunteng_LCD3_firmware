@@ -17,6 +17,7 @@
 #include "eeprom.h"
 #include "button.h"
 #include "ht162.h"
+#include "config.h"
 
 // With SDCC, interrupt service routine function prototypes must be placed in the file that contains main ()
 // in order for an vector for the interrupt to be placed in the the interrupt vector space.  It's acceptable

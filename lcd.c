@@ -512,19 +512,19 @@ void lcd_enable_battery_symbols (uint8_t ui8_state)
 
   switch (ui8_state)
   {
-    case 2:
+    case 6:
     ui8_lcd_frame_buffer[23] |= 16;
     break;
 
-    case 4:
+    case 8:
     ui8_lcd_frame_buffer[23] |= 144;
     break;
 
-    case 6:
+    case 10:
     ui8_lcd_frame_buffer[23] |= 145;
     break;
 
-    case 8:
+    case 12:
     ui8_lcd_frame_buffer[23] |= 209;
     break;
 
@@ -552,20 +552,22 @@ void low_pass_filter_battery_voltage_and_power (void)
   ui16_battery_voltage_accumulated += (uint16_t) f_battery_voltage;
   ui16_battery_voltage_filtered = ui16_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
 
-  // see if motor is not running; reset low pass filter
-  if (!(motor_controller_data.ui8_motor_controller_state_1 & 4))
-    ui16_battery_power_accumulated = 0;
+  // see if motor is not running
+  if (((motor_controller_data.ui8_motor_controller_state_1 & 4) &&
+      motor_controller_data.ui8_battery_current > 5) ||
+          (!(motor_controller_data.ui8_motor_controller_state_1 & 4)))
+  {
+    f_battery_power = (float) motor_controller_data.ui8_battery_current * ui16_battery_voltage_filtered;
+    // low pass filter the value, to avoid possible fast spikes/noise
+    ui16_battery_power_accumulated -= ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
+    ui16_battery_power_accumulated += (uint16_t) f_battery_power;
+    ui16_battery_power_filtered = ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
+    ui16_battery_power_filtered >>= 2;
 
-  f_battery_power = (float) motor_controller_data.ui8_battery_current * f_battery_voltage;
-  // low pass filter the value, to avoid possible fast spikes/noise
-  ui16_battery_power_accumulated -= ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-  ui16_battery_power_accumulated += (uint16_t) f_battery_power;
-  ui16_battery_power_filtered = ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-  ui16_battery_power_filtered >>= 1;
-
-  // loose resolution under 10W
-  ui16_battery_power_filtered /= 10;
-  ui16_battery_power_filtered *= 10;
+    // loose resolution under 10W
+    ui16_battery_power_filtered /= 10;
+    ui16_battery_power_filtered *= 10;
+  }
 }
 
 //void low_pass_filter_speed (void)
