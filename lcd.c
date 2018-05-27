@@ -88,16 +88,56 @@ void clock_lcd (void)
 
   low_pass_filter_battery_voltage_and_power ();
 
-  ui8_button_events = button_get_events ();
+//  ui8_button_events = button_get_events ();
+//
+//  // if down button click event
+//  if (ui8_button_events & 4)
+//  {
+//    // clear down button click event
+//    ui8_button_events &= ~4;
+//
+//    if (motor_controller_data.ui8_assist_level > 0)
+//      motor_controller_data.ui8_assist_level--;
+//  }
+//
+//  // if up button click event
+//  if (ui8_button_events & 16)
+//  {
+//    // clear up button click event
+//    ui8_button_events &= ~16;
+//
+//    if (motor_controller_data.ui8_assist_level < 4)
+//      motor_controller_data.ui8_assist_level++;
+//  }
+
+  if (get_button_up_state ())
+  {
+    if (motor_controller_data.ui8_assist_level < 4)
+      motor_controller_data.ui8_assist_level++;
+
+    while (get_button_up_state ()) ;
+  }
+
+  if (get_button_down_state ())
+  {
+    if (motor_controller_data.ui8_assist_level > 0)
+      motor_controller_data.ui8_assist_level--;
+
+    while (get_button_down_state ()) ;
+  }
 
   // show on LCD only at every 20ms / 5 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 20)
   {
     ui8_timmer_counter = 0;
 
+    lcd_print (motor_controller_data.ui8_assist_level, ASSIST_LEVEL_FIELD);
+    lcd_enable_assist_symbol (1);
+
     lcd_print (ui16_battery_voltage_filtered, ODOMETER_FIELD);
     lcd_enable_vol_symbol (1);
 
+    // the value sent by the controller is for MPH and not KMH...
     // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
     f_wheel_speed = 1.0 / (((float) motor_controller_data.ui16_wheel_inverse_rps * 1.6) / 7380);
     if (motor_controller_data.ui8_motor_controller_state_2 & 128)
@@ -149,17 +189,6 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
     if (ui8_lcd_field == WHEEL_SPEED_FIELD ||
         ui8_lcd_field == BATTERY_POWER_FIELD)
     {
-//      // print only first 2 zeros
-//      if ((ui8_lcd_field == WHEEL_SPEED_FIELD) &&
-//          !(ui8_counter > 1 && ui32_number == 0))
-//      {
-//        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= NUMBERS_MASK;
-//      }
-//      else
-//      {
-//        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] |= ui8_lcd_digit_mask[ui8_digit];
-//      }
-
       ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= NUMBERS_MASK;
     }
 
@@ -205,14 +234,30 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
     if (ui8_lcd_field == WHEEL_SPEED_FIELD ||
         ui8_lcd_field == BATTERY_POWER_FIELD)
     {
-      // print only first zero
-      if (ui8_counter > 0 && ui32_number == 0)
+      if (ui8_lcd_field == WHEEL_SPEED_FIELD)
       {
-        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+        // print only first 2 zeros
+        if (ui8_counter > 1 && ui32_number == 0)
+        {
+          ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+        }
+        else
+        {
+          ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] |= ui8_lcd_digit_mask_inverted[ui8_digit];
+        }
       }
-      else
+
+      if (ui8_lcd_field == BATTERY_POWER_FIELD)
       {
-        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] |= ui8_lcd_digit_mask_inverted[ui8_digit];
+        // print only first zero
+        if (ui8_counter > 0 && ui32_number == 0)
+        {
+          ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+        }
+        else
+        {
+          ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] |= ui8_lcd_digit_mask_inverted[ui8_digit];
+        }
       }
     }
 
