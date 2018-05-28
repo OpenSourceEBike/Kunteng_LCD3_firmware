@@ -13,8 +13,6 @@
 #include "main.h"
 #include "lcd.h"
 
-struct_configuration_variables *p_configuration_variables;
-
 void eeprom_read_values_to_variables (void);
 void eeprom_read_values_to_variables (void);
 void eeprom_write_array (uint8_t *array_values);
@@ -29,7 +27,6 @@ void eeprom_init (void)
     DEFAULT_VALUE_UNITS_TYPE,
   };
   uint8_t ui8_data;
-  p_configuration_variables = get_configuration_variables ();
 
   // start by reading address 0 and see if value is different from our key,
   // if so mean that eeprom memory is clean and we need to populate: should happen after erasing the microcontroller
@@ -47,6 +44,8 @@ void eeprom_init (void)
 
 void eeprom_read_values_to_variables (void)
 {
+  struct_configuration_variables *p_configuration_variables = get_configuration_variables ();
+
   p_configuration_variables->ui8_assist_level = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL);
   p_configuration_variables->ui8_wheel_size = FLASH_ReadByte (ADDRESS_WHEEL_SIZE);
   p_configuration_variables->ui8_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
@@ -56,6 +55,7 @@ void eeprom_read_values_to_variables (void)
 void eeprom_write_if_values_changed (void)
 {
   static uint8_t array_values [EEPROM_BYTES_STORED];
+  struct_configuration_variables *p_configuration_variables = get_configuration_variables ();
 
   // see if the values differ from the ones on EEPROM and if so, write all of them to EEPROM
   if ((p_configuration_variables->ui8_assist_level != FLASH_ReadByte (ADDRESS_ASSIST_LEVEL)) ||

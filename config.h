@@ -16,7 +16,7 @@
 
 // Possible values: 0, 1, 2, 3, 4, 5, 6
 // 0 equal to no filtering and no delay, higher values will increase filtering but will also add bigger delay
-#define READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT 6
-#define READ_BATTERY_POWER_FILTER_COEFFICIENT 5
+#define READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT 5
+#define READ_BATTERY_CURRENT_FILTER_COEFFICIENT 4
 
 #endif /* CONFIG_H_ */
