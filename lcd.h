@@ -14,20 +14,20 @@
 
 //ui8_rx_buffer[2] == 8 if torque sensor
 //ui8_rx_buffer[2] == 4 if motor running
-volatile typedef struct _motor_controller_data
+typedef struct _motor_controller_data
 {
-  volatile uint8_t ui8_battery_level;
-  volatile uint8_t ui8_motor_controller_state_1;
-  volatile uint8_t ui8_pedal_torque_sensor_offset;
-  volatile uint8_t ui8_pedal_torque_sensor;
-  volatile uint8_t ui8_error_code;
-  volatile uint16_t ui16_wheel_inverse_rps;
-  volatile uint8_t ui8_battery_current;
-  volatile uint8_t ui8_motor_controller_state_2;
-  volatile uint8_t ui8_assist_level;
-  volatile uint8_t ui8_wheel_size;
-  volatile uint8_t ui8_max_speed;
-  volatile uint8_t ui8_units_type;
+  uint8_t ui8_battery_level;
+  uint8_t ui8_motor_controller_state_1;
+  uint8_t ui8_pedal_torque_sensor_offset;
+  uint8_t ui8_pedal_torque_sensor;
+  uint8_t ui8_error_code;
+  uint16_t ui16_wheel_inverse_rps;
+  uint8_t ui8_battery_current;
+  uint8_t ui8_motor_controller_state_2;
+  uint8_t ui8_assist_level;
+  uint8_t ui8_wheel_size;
+  uint8_t ui8_max_speed;
+  uint8_t ui8_units_type;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables

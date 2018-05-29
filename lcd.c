@@ -56,19 +56,27 @@ uint8_t ui8_lcd_digit_mask_inverted[] = {
     NUMBER_9_MASK_INVERTED
 };
 
-uint16_t ui16_battery_voltage_accumulated = 0;
-uint16_t ui16_battery_voltage_filtered_x10;
+static uint32_t ui32_battery_voltage_accumulated = 0;
+static uint16_t ui16_battery_voltage_filtered_x10;
 
-uint16_t ui16_battery_current_accumulated = 0;
-uint16_t ui16_battery_current_filtered_x5;
+static uint16_t ui16_battery_current_accumulated = 0;
+static uint16_t ui16_battery_current_filtered_x5;
 
-uint16_t ui16_battery_power_accumulated = 0;
-uint16_t ui16_battery_power_filtered;
+static uint16_t ui16_battery_power_accumulated = 0;
+static uint16_t ui16_battery_power_filtered_x50;
+static uint16_t ui16_battery_power_filtered;
 
-volatile struct_motor_controller_data motor_controller_data;
+static uint32_t ui32_wh_sum_x5 = 0;
+static uint32_t ui32_wh_sum_counter = 0;
+static uint32_t ui32_wh_x10 = 0;
+
+
+struct_motor_controller_data motor_controller_data;
 struct_configuration_variables configuration_variables;
 
-void low_pass_filter_battery_voltage_and_power (void);
+void low_pass_filter_battery_voltage_current_power (void);
+void lcd_enable_motor_symbol (uint8_t ui8_state);
+void calc_wh (void);
 
 void lcd_init (void)
 {
@@ -87,9 +95,39 @@ void clock_lcd (void)
 {
   static uint8_t ui8_button_events;
   static uint8_t ui8_timmer_counter;
+  static uint8_t ui8_100ms_timmer_counter;
+  static uint8_t ui8_1s_timmer_counter;
   float f_wheel_speed;
 
-  low_pass_filter_battery_voltage_and_power ();
+  low_pass_filter_battery_voltage_current_power ();
+
+  // calc wh every 100ms
+  if (ui8_100ms_timmer_counter++ >= 10)
+  {
+    ui8_100ms_timmer_counter = 0;
+    calc_wh ();
+  }
+
+  // update wh on LCD only at 1s rate
+  if (ui8_1s_timmer_counter++ >= 100)
+  {
+    ui8_1s_timmer_counter = 0;
+
+    // avoid  zero divisison
+    if (ui32_wh_sum_counter == 0)
+    {
+      ui32_wh_x10 = 0;
+    }
+    else
+    {
+      ui32_wh_x10 = ui32_wh_sum_counter / 36;
+      ui32_wh_x10 = (ui32_wh_x10 * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
+    }
+
+    lcd_print (ui32_wh_x10, ODOMETER_FIELD);
+    lcd_enable_vol_symbol (0);
+  }
+
 
 //  ui8_button_events = button_get_events ();
 //
@@ -131,14 +169,8 @@ void clock_lcd (void)
   }
 
   // brake
-  if (motor_controller_data.ui8_motor_controller_state_2 & 1)
-  {
-    lcd_enable_brake_symbol (1);
-  }
-  else
-  {
-    lcd_enable_brake_symbol (0);
-  }
+  if (motor_controller_data.ui8_motor_controller_state_2 & 1) { lcd_enable_brake_symbol (1); }
+  else { lcd_enable_brake_symbol (0); }
 
   // show on LCD only at every 10ms / 10 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 10)
@@ -153,15 +185,15 @@ void clock_lcd (void)
     lcd_enable_assist_symbol (1);
 
     // voltage value
-    lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD);
-    lcd_enable_vol_symbol (1);
+//    lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD);
+//    lcd_enable_vol_symbol (1);
 
     // speed value
     // the value sent by the controller is for MPH and not KMH...
     // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
     f_wheel_speed = 1.0 / (((float) motor_controller_data.ui16_wheel_inverse_rps * 1.6) / 7380);
-    if (motor_controller_data.ui8_motor_controller_state_2 & 128)
-      f_wheel_speed = 0;
+    // if wheel is stopped, reset speed value
+    if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { f_wheel_speed = 0; }
 
     lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD);
     lcd_enable_kmh_symbol (1);
@@ -169,10 +201,12 @@ void clock_lcd (void)
 
     // motor power value
     lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
+    lcd_enable_motor_symbol (1);
     lcd_enable_w_symbol (1);
-
-    lcd_send_frame_buffer ();
   }
+
+  // refresh LCD
+  lcd_send_frame_buffer ();
 
   // now write values to EEPROM, but only if one of them changed
   configuration_variables.ui8_assist_level = motor_controller_data.ui8_assist_level;
@@ -546,16 +580,12 @@ void lcd_enable_battery_symbols (uint8_t ui8_state)
 // : from timer label ui8_lcd_frame_buffer[23] |= 8
 
 
-void low_pass_filter_battery_voltage_and_power (void)
+void low_pass_filter_battery_voltage_current_power (void)
 {
-  float f_battery_voltage;
-  float f_battery_power;
-
-  // low pass filter batery voltage
-  f_battery_voltage = ((float) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10);
-  ui16_battery_voltage_accumulated -= ui16_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
-  ui16_battery_voltage_accumulated += (uint16_t) f_battery_voltage;
-  ui16_battery_voltage_filtered_x10 = ui16_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+  // low pass filter battery voltage
+  ui32_battery_voltage_accumulated -= ui32_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+  ui32_battery_voltage_accumulated += (uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000;
+  ui16_battery_voltage_filtered_x10 = ((uint32_t) (ui32_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT)) / 1000;
 
   // low pass filter batery current
   ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> READ_BATTERY_CURRENT_FILTER_COEFFICIENT;
@@ -563,32 +593,42 @@ void low_pass_filter_battery_voltage_and_power (void)
   ui16_battery_current_filtered_x5 = ui16_battery_current_accumulated >> READ_BATTERY_CURRENT_FILTER_COEFFICIENT;
 
   // battery power
-  f_battery_power = ((float) ui16_battery_current_filtered_x5) * ui16_battery_voltage_filtered_x10;
-  ui16_battery_power_filtered = (uint16_t) f_battery_power;
-  ui16_battery_power_filtered /= 50;
+  ui16_battery_power_filtered_x50 = ui16_battery_current_filtered_x5 * ui16_battery_voltage_filtered_x10;
+  ui16_battery_power_filtered = ui16_battery_power_filtered_x50 / 50;
 
   // loose resolution under 10W
-  ui16_battery_power_filtered /= 10;
-  ui16_battery_power_filtered *= 10;
+  if (ui16_battery_power_filtered < 200)
+  {
+    ui16_battery_power_filtered /= 10;
+    ui16_battery_power_filtered *= 10;
+  }
+  // loose resolution under 15W
+  else if (ui16_battery_power_filtered < 300)
+  {
+    ui16_battery_power_filtered /= 15;
+    ui16_battery_power_filtered *= 15;
+  }
+  // loose resolution under 20W
+  else if (ui16_battery_power_filtered < 400)
+  {
+    ui16_battery_power_filtered /= 20;
+    ui16_battery_power_filtered *= 20;
+  }
+  // loose resolution under 25W
+  else
+  {
+    ui16_battery_power_filtered /= 25;
+    ui16_battery_power_filtered *= 25;
+  }
+}
 
-
-
-//  // see if motor is not running
-//  if (((motor_controller_data.ui8_motor_controller_state_1 & 4) &&
-//      motor_controller_data.ui8_battery_current > 5) ||
-//          (!(motor_controller_data.ui8_motor_controller_state_1 & 4)))
-//  {
-//    f_battery_power = (float) motor_controller_data.ui8_battery_current * ui16_battery_voltage_filtered_x10;
-//    // low pass filter the value, to avoid possible fast spikes/noise
-//    ui16_battery_power_accumulated -= ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-//    ui16_battery_power_accumulated += (uint16_t) f_battery_power;
-//    ui16_battery_power_filtered = ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-//    ui16_battery_power_filtered >>= 2;
-//
-//    // loose resolution under 10W
-//    ui16_battery_power_filtered /= 10;
-//    ui16_battery_power_filtered *= 10;
-//  }
+void calc_wh (void)
+{
+  if (ui16_battery_power_filtered_x50 > 0)
+  {
+    ui32_wh_sum_x5 += ui16_battery_power_filtered_x50 / 10;
+    ui32_wh_sum_counter++;
+  }
 }
 
 //void low_pass_filter_speed (void)
