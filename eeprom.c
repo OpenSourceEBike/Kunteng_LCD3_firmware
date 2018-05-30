@@ -40,29 +40,31 @@ void eeprom_init (void)
   }
 }
 
-void eeprom_read_values_to_variables (void)
+void eeprom_read_values_to_variables (struct_configuration_variables *p_configuration_variables)
 {
-  static uint8_t array_values [EEPROM_BYTES_STORED];
-  struct_configuration_variables *p_configuration_variables = get_configuration_variables ();
+  static uint8_t ui8_temp;
+  static uint32_t ui32_temp;
 
-  array_values [0] = KEY;
-  array_values [1] = p_configuration_variables->ui8_assist_level;
-  array_values [2] = p_configuration_variables->ui8_wheel_size;
-  array_values [3] = p_configuration_variables->ui8_max_speed;
-  array_values [4] = p_configuration_variables->ui8_units_type;
-  array_values [5] = p_configuration_variables->ui32_wh_x10_offset & 255;
-  array_values [6] = (p_configuration_variables->ui32_wh_x10_offset >> 8) & 255;
-  array_values [7] = (p_configuration_variables->ui32_wh_x10_offset >> 16) & 255;
-  array_values [8] = (p_configuration_variables->ui32_wh_x10_offset >> 24) & 255;
-  array_values [9] = p_configuration_variables->ui8_odometer_field_state;
+  p_configuration_variables->ui8_assist_level = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL);
+  p_configuration_variables->ui8_wheel_size = FLASH_ReadByte (ADDRESS_WHEEL_SIZE);
+  p_configuration_variables->ui8_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
+  p_configuration_variables->ui8_units_type = FLASH_ReadByte (ADDRESS_UNITS_TYPE);
 
-  eeprom_write_array (array_values);
+  ui32_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_1);
+  ui32_temp += ((ui8_temp << 8) & 0xff00);
+  ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_2);
+  ui32_temp += ((ui8_temp << 16) & 0xff0000);
+  ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_3);
+  ui32_temp += ((ui8_temp << 24) & 0xff000000);
+  p_configuration_variables->ui32_wh_x10_offset = ui32_temp;
+
+  p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
 }
 
-void eeprom_write_variables_values (void)
+void eeprom_write_variables_values (struct_configuration_variables *p_configuration_variables)
 {
   static uint8_t array_values [EEPROM_BYTES_STORED];
-  struct_configuration_variables *p_configuration_variables = get_configuration_variables ();
 
   array_values [0] = KEY;
   array_values [1] = p_configuration_variables->ui8_assist_level;
@@ -94,3 +96,4 @@ void eeprom_write_array (uint8_t *array_values)
 
   FLASH_Lock (FLASH_MEMTYPE_DATA);
 }
+

@@ -89,7 +89,7 @@ void lcd_init (void)
   lcd_send_frame_buffer();
 
   // init variables with the stored value on EEPROM
-  eeprom_read_values_to_variables ();
+  eeprom_read_values_to_variables (&configuration_variables);
 }
 
 void clock_lcd (void)
@@ -138,8 +138,8 @@ void clock_lcd (void)
     clear_button_up_click_event ();
     clear_button_up_long_click_event ();
 
-    if (motor_controller_data.ui8_assist_level < 4)
-      motor_controller_data.ui8_assist_level++;
+    if (configuration_variables.ui8_assist_level < 4)
+      configuration_variables.ui8_assist_level++;
   }
 
   if (get_button_down_click_event () ||
@@ -148,11 +148,12 @@ void clock_lcd (void)
     clear_button_down_click_event ();
     clear_button_down_long_click_event ();
 
-    if (motor_controller_data.ui8_assist_level > 0)
-      motor_controller_data.ui8_assist_level--;
+    if (configuration_variables.ui8_assist_level > 0)
+      configuration_variables.ui8_assist_level--;
   }
+  motor_controller_data.ui8_assist_level = configuration_variables.ui8_assist_level;
 
-  lcd_print (motor_controller_data.ui8_assist_level, ASSIST_LEVEL_FIELD);
+  lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
   lcd_enable_assist_symbol (1);
 
   // brake
@@ -226,9 +227,8 @@ void clock_lcd (void)
   if (get_button_onoff_long_click_event ())
   {
     // save values to EEPROM
-    configuration_variables.ui8_assist_level = motor_controller_data.ui8_assist_level;
     configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
-    eeprom_write_variables_values ();
+    eeprom_write_variables_values (&configuration_variables);
 
     // clear LCD so it is clear to user what is happening
     lcd_clear_frame_buffer ();
@@ -637,7 +637,7 @@ void low_pass_filter_battery_voltage_current_power (void)
 void calc_wh (void)
 {
   static uint8_t ui8_1s_timmer_counter;
-  uint32_t ui32_temp;
+  uint32_t ui32_temp = 0;
 
   if (ui16_battery_power_filtered_x50 > 0)
   {
@@ -651,16 +651,13 @@ void calc_wh (void)
     ui8_1s_timmer_counter = 0;
 
     // avoid  zero divisison
-    if (ui32_wh_sum_counter == 0)
-    {
-      ui32_wh_x10 = 0;
-    }
-    else
+    if (ui32_wh_sum_counter != 0)
     {
       ui32_temp = ui32_wh_sum_counter / 36;
       ui32_temp = (ui32_temp * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
-      ui32_wh_x10 = ui32_temp;
     }
+
+    ui32_wh_x10 = configuration_variables.ui32_wh_x10_offset + ui32_temp;
   }
 }
 
