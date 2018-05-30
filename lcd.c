@@ -89,10 +89,7 @@ void lcd_init (void)
   lcd_send_frame_buffer();
 
   // init variables with the stored value on EEPROM
-  motor_controller_data.ui8_assist_level = configuration_variables.ui8_assist_level;
-  motor_controller_data.ui8_wheel_size = configuration_variables.ui8_wheel_size;
-  motor_controller_data.ui8_max_speed = configuration_variables.ui8_max_speed;
-  motor_controller_data.ui8_units_type = configuration_variables.ui8_units_type;
+  eeprom_read_values_to_variables ();
 }
 
 void clock_lcd (void)
@@ -100,6 +97,7 @@ void clock_lcd (void)
   static uint8_t ui8_button_events;
   static uint8_t ui8_timmer_counter;
   static uint8_t ui8_100ms_timmer_counter;
+  static uint8_t ui8_1s_timmer_counter;
   float f_wheel_speed;
 
   // don't update LCD up to we get first communication package from the motor controller
@@ -114,20 +112,13 @@ void clock_lcd (void)
     ui8_motor_controller_init = 0;
     lcd_clear_frame_buffer (); // let's clear LCD
 
-    eeprom_read_values_to_variables ();
-
     // wait for a first good read value of ADC: voltage can't be 0
     while (ui16_adc_read_battery_voltage_10b () == 0) ;
 
     // reset Wh value if battery is over 54.4V (when battery is near fully charged)
     if (((uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
     {
-      ui32_wh_x10 = 0;
-    }
-    else
-    {
-      // start Wh variable with the saved previous value
-      ui32_wh_x10 = configuration_variables.ui32_wh_x10;
+      configuration_variables.ui32_wh_x10_offset = 0;
     }
   }
 
@@ -236,7 +227,7 @@ void clock_lcd (void)
   {
     // save values to EEPROM
     configuration_variables.ui8_assist_level = motor_controller_data.ui8_assist_level;
-    configuration_variables.ui32_wh_x10 = ui32_wh_x10;
+    configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
     eeprom_write_variables_values ();
 
     // clear LCD so it is clear to user what is happening
@@ -645,20 +636,30 @@ void low_pass_filter_battery_voltage_current_power (void)
 
 void calc_wh (void)
 {
+  static uint8_t ui8_1s_timmer_counter;
   uint32_t ui32_temp;
 
-  // keep summing and track the number of increments
   if (ui16_battery_power_filtered_x50 > 0)
   {
     ui32_wh_sum_x5 += ui16_battery_power_filtered_x50 / 10;
     ui32_wh_sum_counter++;
+  }
+
+  // calc at 1s rate
+  if (ui8_1s_timmer_counter++ >= 10)
+  {
+    ui8_1s_timmer_counter = 0;
 
     // avoid  zero divisison
-    if (ui32_wh_sum_counter != 0)
+    if (ui32_wh_sum_counter == 0)
+    {
+      ui32_wh_x10 = 0;
+    }
+    else
     {
       ui32_temp = ui32_wh_sum_counter / 36;
       ui32_temp = (ui32_temp * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
-      ui32_wh_x10 += ui32_temp;
+      ui32_wh_x10 = ui32_temp;
     }
   }
 }

@@ -36,7 +36,7 @@ typedef struct _configuration_variables
   uint8_t ui8_wheel_size;
   uint8_t ui8_max_speed;
   uint8_t ui8_units_type;
-  uint32_t ui32_wh_x10;
+  uint32_t ui32_wh_x10_offset;
   uint8_t ui8_odometer_field_state;
 } struct_configuration_variables;
 
