@@ -11,17 +11,37 @@
 #include "gpio.h"
 #include "pins.h"
 
-uint8_t ui8_buttons_events;
-uint8_t ui8_onoff_button_state;
-uint8_t ui8_onoff_button_last_state;
-uint8_t ui8_down_button_state;
-uint8_t ui8_down_button_last_state;
-uint8_t ui8_up_button_state;
-uint8_t ui8_up_button_last_state;
+uint8_t ui8_buttons_events = 0;
+uint8_t ui8_onoff_button_state = 0;
+uint8_t ui8_onoff_button_state_counter = 0;
+uint8_t ui8_down_button_state = 0;
+uint8_t ui8_down_button_state_counter = 0;
+uint8_t ui8_up_button_state = 0;
+uint8_t ui8_up_button_state_counter = 0;
 
 uint8_t get_button_up_state (void)
 {
   return GPIO_ReadInputPin(LCD3_BUTTON_UP__PORT, LCD3_BUTTON_UP__PIN) != 0 ? 0: 1;
+}
+
+uint8_t get_button_up_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 4));
+}
+
+uint8_t get_button_up_long_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 5));
+}
+
+void clear_button_up_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 4);
+}
+
+void clear_button_up_long_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 5);
 }
 
 uint8_t get_button_down_state (void)
@@ -29,9 +49,49 @@ uint8_t get_button_down_state (void)
   return GPIO_ReadInputPin(LCD3_BUTTON_DOWN__PORT, LCD3_BUTTON_DOWN__PIN) != 0 ? 0: 1;
 }
 
-uint8_t get_button_onnoff_state (void)
+uint8_t get_button_down_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 2));
+}
+
+uint8_t get_button_down_long_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 3));
+}
+
+void clear_button_down_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 2);
+}
+
+void clear_button_down_long_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 3);
+}
+
+uint8_t get_button_onoff_state (void)
 {
   return GPIO_ReadInputPin(LCD3_BUTTON_ONOFF__PORT, LCD3_BUTTON_ONOFF__PIN) != 0 ? 1: 0;
+}
+
+uint8_t get_button_onoff_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 0));
+}
+
+uint8_t get_button_onoff_long_click_event (void)
+{
+  return (ui8_buttons_events & (1 << 1));
+}
+
+void clear_button_onoff_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 0);
+}
+
+void clear_button_onoff_long_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 1);
 }
 
 uint8_t button_get_events (void)
@@ -41,47 +101,123 @@ uint8_t button_get_events (void)
 
 void clock_button (void)
 {
-  ui8_onoff_button_state = get_button_onnoff_state ();
-  if (ui8_onoff_button_last_state == 0 &&
-      ui8_onoff_button_state == 1)
+  switch (ui8_onoff_button_state)
   {
-    // start counting for long press
-  }
-  // look for release of the button: click event
-  else if (ui8_onoff_button_last_state == 1 &&
-      ui8_onoff_button_state == 0)
-  {
-    ui8_buttons_events |= 1 << 0;
-  }
-  ui8_onoff_button_last_state = ui8_onoff_button_state;
+    case 0:
+      if (!get_button_onoff_click_event () &&
+          !get_button_onoff_long_click_event () &&
+          get_button_onoff_state ())
+        ui8_onoff_button_state = 1;
+    break;
 
+    case 1:
+      // wait for button release; event click
+      if (!get_button_onoff_state ())
+      {
+        ui8_onoff_button_state = 0;
+        ui8_onoff_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 0);
+      }
 
-  ui8_down_button_state = get_button_down_state ();
-  if (ui8_down_button_last_state == 0 &&
-      ui8_down_button_state == 1)
-  {
-    // start counting for long press
-  }
-  // look for release of the button: click event
-  else if (ui8_down_button_last_state == 1 &&
-      ui8_down_button_state == 0)
-  {
-    ui8_buttons_events |= 1 << 2;
-  }
-  ui8_down_button_last_state = ui8_down_button_state;
+      // event long click
+      if (ui8_onoff_button_state_counter++ > 250) // 2.5 seconds
+      {
+        ui8_onoff_button_state = 2;
+        ui8_onoff_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 1);
+      }
+    break;
 
+    case 2:
+      // wait for button release
+      if (!get_button_onoff_state ())
+      {
+        ui8_onoff_button_state = 0;
+      }
+    break;
 
-  ui8_up_button_state = get_button_up_state ();
-  if (ui8_up_button_last_state == 0 &&
-      ui8_up_button_state == 1)
-  {
-    // start counting for long press
+    default:
+      ui8_onoff_button_state = 0;
+    break;
   }
-  // look for release of the button: click event
-  else if (ui8_up_button_last_state == 1 &&
-      ui8_up_button_state == 0)
+
+  switch (ui8_down_button_state)
   {
-    ui8_buttons_events |= 1 << 4;
+    case 0:
+      if (!get_button_down_click_event () &&
+          !get_button_down_long_click_event () &&
+          get_button_down_state ())
+        ui8_down_button_state = 1;
+    break;
+
+    case 1:
+      // wait for button release; event click
+      if (!get_button_down_state ())
+      {
+        ui8_down_button_state = 0;
+        ui8_down_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 2);
+      }
+
+      // event long click
+      if (ui8_down_button_state_counter++ > 250) // 2.5 seconds
+      {
+        ui8_down_button_state = 2;
+        ui8_down_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 3);
+      }
+    break;
+
+    case 2:
+      // wait for button release
+      if (!get_button_onoff_state ())
+      {
+        ui8_down_button_state = 0;
+      }
+    break;
+
+    default:
+      ui8_down_button_state = 0;
+    break;
   }
-  ui8_up_button_last_state = ui8_up_button_state;
+
+  switch (ui8_up_button_state)
+  {
+    case 0:
+      if (!get_button_up_click_event () &&
+          !get_button_up_long_click_event () &&
+          get_button_up_state ())
+        ui8_up_button_state = 1;
+    break;
+
+    case 1:
+      // wait for button release; event click
+      if (!get_button_up_state ())
+      {
+        ui8_up_button_state = 0;
+        ui8_up_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 4);
+      }
+
+      // event long click
+      if (ui8_up_button_state_counter++ > 250) // 2.5 seconds
+      {
+        ui8_up_button_state = 2;
+        ui8_up_button_state_counter = 0;
+        ui8_buttons_events |= (1 << 5);
+      }
+    break;
+
+    case 2:
+      // wait for button release
+      if (!get_button_up_state ())
+      {
+        ui8_up_button_state = 0;
+      }
+    break;
+
+    default:
+      ui8_up_button_state = 0;
+    break;
+  }
 }

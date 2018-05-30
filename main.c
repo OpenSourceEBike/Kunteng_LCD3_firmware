@@ -58,40 +58,12 @@ int main (void)
   lcd_init (); // must be after eeprom_init ();
   enableInterrupts ();
 
-  TIM1_SetCompare4 (10);
-  lcd_enable_odometer_point_symbol (1);
-  lcd_send_frame_buffer ();
+  // block until users releases the buttons
+  while (get_button_onoff_state () ||
+      get_button_down_state () ||
+      get_button_up_state ()) ;
 
   ui16_tim3_counter = TIM3_GetCounter ();
-
-//
-//  ui8_t = 2;
-//  ui8_lcd_frame_buffer[ui8_t] |= 1;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 2;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 4;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 8;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 16;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 32;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 64;
-//  lcd_send_frame_buffer ();
-//
-//  ui8_lcd_frame_buffer[ui8_t] |= 128;
-//  lcd_send_frame_buffer ();
-
-
-
 
   while (1)
   {

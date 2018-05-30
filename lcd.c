@@ -18,6 +18,8 @@
 #include "config.h"
 #include "button.h"
 #include "eeprom.h"
+#include "pins.h"
+#include "uart.h"
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -70,6 +72,7 @@ static uint32_t ui32_wh_sum_x5 = 0;
 static uint32_t ui32_wh_sum_counter = 0;
 static uint32_t ui32_wh_x10 = 0;
 
+static uint8_t ui8_motor_controller_init = 1;
 
 struct_motor_controller_data motor_controller_data;
 struct_configuration_variables configuration_variables;
@@ -81,7 +84,8 @@ void calc_wh (void);
 void lcd_init (void)
 {
   ht1622_init ();
-  lcd_clear_frame_buffer ();
+  TIM1_SetCompare4 (10); // set background light
+  lcd_set_frame_buffer ();
   lcd_send_frame_buffer();
 
   // init variables with the stored value on EEPROM
@@ -96,8 +100,36 @@ void clock_lcd (void)
   static uint8_t ui8_button_events;
   static uint8_t ui8_timmer_counter;
   static uint8_t ui8_100ms_timmer_counter;
-  static uint8_t ui8_1s_timmer_counter;
   float f_wheel_speed;
+
+  // don't update LCD up to we get first communication package from the motor controller
+  if (ui8_motor_controller_init &&
+      (uart_received_first_package () == 0))
+  {
+    return;
+  }
+  // this will be excuted only 1 time at startup
+  else if (ui8_motor_controller_init)
+  {
+    ui8_motor_controller_init = 0;
+    lcd_clear_frame_buffer (); // let's clear LCD
+
+    eeprom_read_values_to_variables ();
+
+    // wait for a first good read value of ADC: voltage can't be 0
+    while (ui16_adc_read_battery_voltage_10b () == 0) ;
+
+    // reset Wh value if battery is over 54.4V (when battery is near fully charged)
+    if (((uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
+    {
+      ui32_wh_x10 = 0;
+    }
+    else
+    {
+      // start Wh variable with the saved previous value
+      ui32_wh_x10 = configuration_variables.ui32_wh_x10;
+    }
+  }
 
   low_pass_filter_battery_voltage_current_power ();
 
@@ -108,114 +140,125 @@ void clock_lcd (void)
     calc_wh ();
   }
 
-  // update wh on LCD only at 1s rate
-  if (ui8_1s_timmer_counter++ >= 100)
-  {
-    ui8_1s_timmer_counter = 0;
-
-    // avoid  zero divisison
-    if (ui32_wh_sum_counter == 0)
-    {
-      ui32_wh_x10 = 0;
-    }
-    else
-    {
-      ui32_wh_x10 = ui32_wh_sum_counter / 36;
-      ui32_wh_x10 = (ui32_wh_x10 * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
-    }
-
-    lcd_print (ui32_wh_x10, ODOMETER_FIELD);
-    lcd_enable_vol_symbol (0);
-  }
-
-
-//  ui8_button_events = button_get_events ();
-//
-//  // if down button click event
-//  if (ui8_button_events & 4)
-//  {
-//    // clear down button click event
-//    ui8_button_events &= ~4;
-//
-//    if (motor_controller_data.ui8_assist_level > 0)
-//      motor_controller_data.ui8_assist_level--;
-//  }
-//
-//  // if up button click event
-//  if (ui8_button_events & 16)
-//  {
-//    // clear up button click event
-//    ui8_button_events &= ~16;
-//
-//    if (motor_controller_data.ui8_assist_level < 4)
-//      motor_controller_data.ui8_assist_level++;
-//  }
-
   // assist level
-  if (get_button_up_state ())
+  if (get_button_up_click_event () ||
+      get_button_up_long_click_event ())
   {
+    clear_button_up_click_event ();
+    clear_button_up_long_click_event ();
+
     if (motor_controller_data.ui8_assist_level < 4)
       motor_controller_data.ui8_assist_level++;
-
-    while (get_button_up_state ()) ;
   }
 
-  if (get_button_down_state ())
+  if (get_button_down_click_event () ||
+      get_button_down_long_click_event ())
   {
+    clear_button_down_click_event ();
+    clear_button_down_long_click_event ();
+
     if (motor_controller_data.ui8_assist_level > 0)
       motor_controller_data.ui8_assist_level--;
-
-    while (get_button_down_state ()) ;
   }
+
+  lcd_print (motor_controller_data.ui8_assist_level, ASSIST_LEVEL_FIELD);
+  lcd_enable_assist_symbol (1);
 
   // brake
   if (motor_controller_data.ui8_motor_controller_state_2 & 1) { lcd_enable_brake_symbol (1); }
   else { lcd_enable_brake_symbol (0); }
 
-  // show on LCD only at every 10ms / 10 times per second and this helps to visual filter the fast changing values
+  // odometer values
+  if (get_button_onoff_click_event ())
+  {
+    clear_button_onoff_click_event ();
+    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 3;
+  }
+
+  switch (configuration_variables.ui8_odometer_field_state)
+  {
+    // Wh value
+    case 0:
+      lcd_print (ui32_wh_x10, ODOMETER_FIELD);
+      lcd_enable_odometer_point_symbol (1);
+      lcd_enable_vol_symbol (0);
+    break;
+
+    // voltage value
+    case 1:
+      lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD);
+      lcd_enable_odometer_point_symbol (1);
+      lcd_enable_vol_symbol (1);
+    break;
+
+    // current value
+    case 2:
+      lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD);
+      lcd_enable_odometer_point_symbol (1);
+      lcd_enable_vol_symbol (0);
+    break;
+
+    default:
+    configuration_variables.ui8_odometer_field_state = 0;
+    break;
+  }
+
+  // speed value
+  // the value sent by the controller is for MPH and not KMH...
+  // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
+  f_wheel_speed = 1.0 / (((float) motor_controller_data.ui16_wheel_inverse_rps * 1.6) / 7380);
+  // if wheel is stopped, reset speed value
+  if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { f_wheel_speed = 0; }
+
+  lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD);
+  lcd_enable_kmh_symbol (1);
+  lcd_enable_wheel_speed_point_symbol (1);
+
+  // motor power value
+  lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
+  lcd_enable_motor_symbol (1);
+  lcd_enable_w_symbol (1);
+
+  // show on LCD only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 10)
   {
     ui8_timmer_counter = 0;
 
     // battery SOC
     lcd_enable_battery_symbols (motor_controller_data.ui8_battery_level);
-
-    // assist level
-    lcd_print (motor_controller_data.ui8_assist_level, ASSIST_LEVEL_FIELD);
-    lcd_enable_assist_symbol (1);
-
-    // voltage value
-//    lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD);
-//    lcd_enable_vol_symbol (1);
-
-    // speed value
-    // the value sent by the controller is for MPH and not KMH...
-    // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
-    f_wheel_speed = 1.0 / (((float) motor_controller_data.ui16_wheel_inverse_rps * 1.6) / 7380);
-    // if wheel is stopped, reset speed value
-    if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { f_wheel_speed = 0; }
-
-    lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD);
-    lcd_enable_kmh_symbol (1);
-    lcd_enable_wheel_speed_point_symbol (1);
-
-    // motor power value
-    lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
-    lcd_enable_motor_symbol (1);
-    lcd_enable_w_symbol (1);
   }
 
   // refresh LCD
   lcd_send_frame_buffer ();
 
-  // now write values to EEPROM, but only if one of them changed
-  configuration_variables.ui8_assist_level = motor_controller_data.ui8_assist_level;
-  eeprom_write_if_values_changed ();
+  // turn off
+  if (get_button_onoff_long_click_event ())
+  {
+    // save values to EEPROM
+    configuration_variables.ui8_assist_level = motor_controller_data.ui8_assist_level;
+    configuration_variables.ui32_wh_x10 = ui32_wh_x10;
+    eeprom_write_variables_values ();
+
+    // clear LCD so it is clear to user what is happening
+    lcd_clear_frame_buffer ();
+    lcd_send_frame_buffer ();
+
+    // now disable the power to all the system
+    GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+
+    // block here
+    while (1) ;
+  }
 }
 
 void lcd_clear_frame_buffer (void)
 {
   memset(ui8_lcd_frame_buffer, 0, LCD_FRAME_BUFFER_SIZE);
+}
+
+void lcd_set_frame_buffer (void)
+{
+  memset(ui8_lcd_frame_buffer, 255, LCD_FRAME_BUFFER_SIZE);
 }
 
 void lcd_send_frame_buffer (void)
@@ -549,36 +592,20 @@ void lcd_enable_battery_symbols (uint8_t ui8_state)
 //  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
 //  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
 
-  switch (ui8_state)
-  {
-    case 6:
+  // first clean battery symbols
+  ui8_lcd_frame_buffer[23] &= ~241;
+
+  if (ui8_state <= 5)
     ui8_lcd_frame_buffer[23] |= 16;
-    break;
-
-    case 8:
+  else if ((ui8_state > 5) && (ui8_state <= 10))
     ui8_lcd_frame_buffer[23] |= 144;
-    break;
-
-    case 10:
+  else if ((ui8_state > 10) && (ui8_state <= 15))
     ui8_lcd_frame_buffer[23] |= 145;
-    break;
-
-    case 12:
+  else if ((ui8_state > 15) && (ui8_state <= 20))
     ui8_lcd_frame_buffer[23] |= 209;
-    break;
-
-    case 16:
+  else
     ui8_lcd_frame_buffer[23] |= 241;
-    break;
-
-    default:
-    break;
-  }
 }
-
-
-// : from timer label ui8_lcd_frame_buffer[23] |= 8
-
 
 void low_pass_filter_battery_voltage_current_power (void)
 {
@@ -602,12 +629,6 @@ void low_pass_filter_battery_voltage_current_power (void)
     ui16_battery_power_filtered /= 10;
     ui16_battery_power_filtered *= 10;
   }
-  // loose resolution under 15W
-  else if (ui16_battery_power_filtered < 300)
-  {
-    ui16_battery_power_filtered /= 15;
-    ui16_battery_power_filtered *= 15;
-  }
   // loose resolution under 20W
   else if (ui16_battery_power_filtered < 400)
   {
@@ -624,24 +645,23 @@ void low_pass_filter_battery_voltage_current_power (void)
 
 void calc_wh (void)
 {
+  uint32_t ui32_temp;
+
+  // keep summing and track the number of increments
   if (ui16_battery_power_filtered_x50 > 0)
   {
     ui32_wh_sum_x5 += ui16_battery_power_filtered_x50 / 10;
     ui32_wh_sum_counter++;
+
+    // avoid  zero divisison
+    if (ui32_wh_sum_counter != 0)
+    {
+      ui32_temp = ui32_wh_sum_counter / 36;
+      ui32_temp = (ui32_temp * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
+      ui32_wh_x10 += ui32_temp;
+    }
   }
 }
-
-//void low_pass_filter_speed (void)
-//{
-//  float f_battery_power;
-//
-//  f_battery_power = (float) motor_controller_data.ui8_battery_current * 5.0 * f_battery_voltage;
-//
-//  // low pass filter the value, to avoid possible fast spikes/noise
-//  ui16_battery_power_accumulated -= ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-//  ui16_battery_power_accumulated += ((uint16_t) f_battery_power;
-//  ui16_battery_power_filtered = ui16_battery_power_accumulated >> READ_BATTERY_POWER_FILTER_COEFFICIENT;
-//}
 
 struct_configuration_variables* get_configuration_variables (void)
 {

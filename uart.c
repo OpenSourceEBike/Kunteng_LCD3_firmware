@@ -25,6 +25,7 @@ volatile uint8_t ui8_checksum_1st_package;
 volatile uint8_t ui8_checksum_2nd_package;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
+volatile uint8_t ui8_uart_received_first_package = 0;
 
 void uart2_init (void)
 {
@@ -44,11 +45,10 @@ void uart2_init (void)
 // and disable the interrupt. The interrupt should be enable again on main loop, after the package being processed
 void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
 {
-  static uint8_t _ui8_rx_buffer[21];
-
-
   if(UART2_GetFlagStatus(UART2_FLAG_RXNE) == SET)
   {
+    UART2->SR &= (uint8_t)~(UART2_FLAG_RXNE); // this may be redundant
+
     ui8_byte_received = UART2_ReceiveData8 ();
 
     switch (ui8_state_machine)
@@ -57,7 +57,6 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       if (ui8_byte_received == 67) // see if we get start package byte
       {
         ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
-_ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
         ui8_rx_counter++;
         ui8_state_machine = 1;
       }
@@ -70,7 +69,6 @@ _ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
 
       case 1:
       ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
-_ui8_rx_buffer[ui8_rx_counter] = ui8_byte_received;
       ui8_rx_counter++;
 
       // see if is the last byte of the package
@@ -122,7 +120,7 @@ void clock_uart_data (void)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
 
-      p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1];
+      p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1]; // a value between 0 and 24
       p_motor_controller_data->ui8_motor_controller_state_1 = ui8_rx_buffer[2];
       p_motor_controller_data->ui8_pedal_torque_sensor_offset = ui8_rx_buffer[3];
       p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[4];
@@ -158,7 +156,6 @@ void clock_uart_data (void)
       {
         ui8_checksum += ui8_tx_buffer[ui8_i];
       }
-      ui8_checksum = ui8_checksum % 256;
       ui8_tx_buffer[6] = ui8_checksum;
 
       // send the full package to UART
@@ -169,11 +166,18 @@ void clock_uart_data (void)
 
       // signal that we processed the full package
       ui8_received_package_flag = 0;
+
+      ui8_uart_received_first_package = 1;
     }
 
     // enable UART2 receive interrupt as we are now ready to receive a new package
     UART2->CR2 |= (1 << 5);
   }
+}
+
+uint8_t uart_received_first_package (void)
+{
+  return ui8_uart_received_first_package;
 }
 
 #if __SDCC_REVISION < 9624
@@ -183,7 +187,7 @@ void putchar(char c)
   UART2_SendData8(c);
 
   //Loop until the end of transmission
-  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET);
+  while (UART2_GetFlagStatus(UART2_FLAG_TXE) == RESET) ;
 }
 #else
 int putchar(int c)

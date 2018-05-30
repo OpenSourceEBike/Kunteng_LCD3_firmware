@@ -14,14 +14,20 @@
 #define KEY                                 0xca
 
 #define EEPROM_BASE_ADDRESS 			          0x4000
-#define ADDRESS_KEY 				                EEPROM_BASE_ADDRESS
+#define ADDRESS_KEY 				                0 + EEPROM_BASE_ADDRESS
 #define ADDRESS_ASSIST_LEVEL 			          1 + EEPROM_BASE_ADDRESS
 #define ADDRESS_WHEEL_SIZE	 		            2 + EEPROM_BASE_ADDRESS
 #define ADDRESS_MAX_SPEED	 		              3 + EEPROM_BASE_ADDRESS
 #define ADDRESS_UNITS_TYPE                  4 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                 5
+#define ADDRESS_HW_X10_0                    5 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_1                    6 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_2                    7 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_3                    8 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_FIELD_STATE        9 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                 10
 
 void eeprom_init (void);
-void eeprom_write_if_values_changed (void);
+void eeprom_write_variables_values (void);
+void eeprom_read_values_to_variables (void);
 
 #endif /* _EEPROM_H_ */

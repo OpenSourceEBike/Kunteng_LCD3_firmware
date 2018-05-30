@@ -21,11 +21,15 @@ void ht1622_send_command(uint8_t command);
 void ht1622_init (void)
 {
   GPIO_WriteHigh(GPIOB, GPIO_PIN_4); // enable VDD to HT1622 ??
-  GPIO_WriteHigh(GPIOE, GPIO_PIN_3);
+//  GPIO_WriteHigh(GPIOE, GPIO_PIN_3); // only needed for 24V battery pack
+
+  GPIO_Init(LCD3_ONOFF_POWER__PORT,
+            LCD3_ONOFF_POWER__PIN,
+            GPIO_MODE_OUT_PP_LOW_FAST);
+  GPIO_WriteHigh(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
 
   GPIO_WriteHigh(LCD3_ENABLE_BACKLIGHT_POWER__PORT, LCD3_ENABLE_BACKLIGHT_POWER__PIN);
   GPIO_WriteLow(LCD3_ENABLE_BACKLIGHT__PORT, LCD3_ENABLE_BACKLIGHT__PIN);
-
 
   GPIO_Init(LCD3_HT1622_CS__PORT,
             LCD3_HT1622_CS__PIN,

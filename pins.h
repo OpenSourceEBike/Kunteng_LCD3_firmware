@@ -66,4 +66,7 @@
 #define LCD3_HT1622_DATA__PORT                  GPIOC
 #define LCD3_HT1622_DATA__PIN                   GPIO_PIN_5
 
+#define LCD3_ONOFF_POWER__PORT                  GPIOA
+#define LCD3_ONOFF_POWER__PIN                   GPIO_PIN_2
+
 #endif /* _PINS_H_ */

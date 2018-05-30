@@ -14,6 +14,8 @@
 
 void adc_init (void)
 {
+  static uint8_t ui8_counter;
+
   //init GPIO for the used ADC pins
   GPIO_Init(GPIOE,
       GPIO_PIN_7,

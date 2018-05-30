@@ -13,6 +13,7 @@
 
 void uart2_init (void);
 void clock_uart_data (void);
+uint8_t uart_received_first_package (void);
 
 #if __SDCC_REVISION < 9624
 void putchar(char c);

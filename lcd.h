@@ -36,6 +36,8 @@ typedef struct _configuration_variables
   uint8_t ui8_wheel_size;
   uint8_t ui8_max_speed;
   uint8_t ui8_units_type;
+  uint32_t ui32_wh_x10;
+  uint8_t ui8_odometer_field_state;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits
@@ -76,6 +78,8 @@ extern uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 #define NUMBER_8_MASK_INVERTED    247
 #define NUMBER_9_MASK_INVERTED    245
 
+// : from timer label ui8_lcd_frame_buffer[23] |= 8
+
 void lcd_init (void);
 void lcd_enable_vol_symbol (uint8_t ui8_state);
 void lcd_enable_w_symbol (uint8_t ui8_state);
@@ -88,6 +92,7 @@ void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_enable_battery_symbols (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
+void lcd_set_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
 void clock_lcd (void);
 struct_configuration_variables* get_configuration_variables (void);
