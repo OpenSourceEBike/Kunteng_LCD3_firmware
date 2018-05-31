@@ -13,6 +13,8 @@
 #include "main.h"
 #include "lcd.h"
 
+static struct_configuration_variables *p_configuration_variables;
+
 void eeprom_write_array (uint8_t *array_values);
 
 void eeprom_init (void)
@@ -31,6 +33,8 @@ void eeprom_init (void)
   };
   uint8_t ui8_data;
 
+  p_configuration_variables = get_configuration_variables ();
+
   // start by reading address 0 and see if value is different from our key,
   // if so mean that eeprom memory is clean and we need to populate: should happen after erasing the microcontroller
   ui8_data = FLASH_ReadByte (ADDRESS_KEY);
@@ -40,7 +44,7 @@ void eeprom_init (void)
   }
 }
 
-void eeprom_read_values_to_variables (struct_configuration_variables *p_configuration_variables)
+void eeprom_read_values_to_variables (void)
 {
   static uint8_t ui8_temp;
   static uint32_t ui32_temp;
@@ -62,7 +66,7 @@ void eeprom_read_values_to_variables (struct_configuration_variables *p_configur
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
 }
 
-void eeprom_write_variables_values (struct_configuration_variables *p_configuration_variables)
+void eeprom_write_variables_values (void)
 {
   static uint8_t array_values [EEPROM_BYTES_STORED];
 

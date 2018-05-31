@@ -45,7 +45,6 @@ int main (void)
 {
   uint16_t ui16_tim3_counter;
   uint16_t ui16_10ms_loop_counter;
-  uint8_t ui8_t;
 
   //set clock at the max 16MHz
   CLK_HSIPrescalerConfig (CLK_PRESCALER_HSIDIV1);

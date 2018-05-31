@@ -74,32 +74,38 @@ static uint32_t ui32_wh_x10 = 0;
 
 static uint8_t ui8_motor_controller_init = 1;
 
-struct_motor_controller_data motor_controller_data;
-struct_configuration_variables configuration_variables;
+static struct_motor_controller_data motor_controller_data;
+static struct_configuration_variables configuration_variables;
 
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
 void calc_wh (void);
-
-void lcd_init (void)
-{
-  ht1622_init ();
-  TIM1_SetCompare4 (10); // set background light
-  lcd_set_frame_buffer ();
-  lcd_send_frame_buffer();
-
-  // init variables with the stored value on EEPROM
-  eeprom_read_values_to_variables (&configuration_variables);
-}
+void assist_level (void);
+void brake (void);
+void odometer (void);
+void wheel_speed (void);
+void power (void);
+void power_off_management (void);
+void first_time_management (void);
+void battery_soc (void);
 
 void clock_lcd (void)
 {
-  static uint8_t ui8_button_events;
-  static uint8_t ui8_timmer_counter;
-  static uint8_t ui8_100ms_timmer_counter;
-  static uint8_t ui8_1s_timmer_counter;
-  float f_wheel_speed;
+  first_time_management ();
+  low_pass_filter_battery_voltage_current_power ();
+  calc_wh ();
+  assist_level ();
+  brake ();
+  odometer ();
+  wheel_speed ();
+  power ();
+  battery_soc ();
+  lcd_send_frame_buffer (); // refresh LCD
+  power_off_management ();
+}
 
+void first_time_management (void)
+{
   // don't update LCD up to we get first communication package from the motor controller
   if (ui8_motor_controller_init &&
       (uart_received_first_package () == 0))
@@ -121,17 +127,51 @@ void clock_lcd (void)
       configuration_variables.ui32_wh_x10_offset = 0;
     }
   }
+}
 
-  low_pass_filter_battery_voltage_current_power ();
-
-  // calc wh every 100ms
-  if (ui8_100ms_timmer_counter++ >= 10)
+void power_off_management (void)
+{
+  // turn off
+  if (get_button_onoff_long_click_event ())
   {
-    ui8_100ms_timmer_counter = 0;
-    calc_wh ();
-  }
+    // save values to EEPROM
+    configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
+    eeprom_write_variables_values ();
 
-  // assist level
+    // clear LCD so it is clear to user what is happening
+    lcd_clear_frame_buffer ();
+    lcd_send_frame_buffer ();
+
+    // now disable the power to all the system
+    GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+
+    // block here
+    while (1) ;
+  }
+}
+
+void battery_soc (void)
+{
+  static uint8_t ui8_timmer_counter;
+
+  // show on LCD only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
+  if (ui8_timmer_counter++ >= 10)
+  {
+    ui8_timmer_counter = 0;
+
+    // battery SOC
+    lcd_enable_battery_symbols (motor_controller_data.ui8_battery_level);
+  }
+}
+void power (void)
+{
+  lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
+  lcd_enable_motor_symbol (1);
+  lcd_enable_w_symbol (1);
+}
+
+void assist_level (void)
+{
   if (get_button_up_click_event () ||
       get_button_up_long_click_event ())
   {
@@ -155,11 +195,16 @@ void clock_lcd (void)
 
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
   lcd_enable_assist_symbol (1);
+}
 
-  // brake
+void brake (void)
+{
   if (motor_controller_data.ui8_motor_controller_state_2 & 1) { lcd_enable_brake_symbol (1); }
   else { lcd_enable_brake_symbol (0); }
+}
 
+void odometer (void)
+{
   // odometer values
   if (get_button_onoff_click_event ())
   {
@@ -194,6 +239,11 @@ void clock_lcd (void)
     configuration_variables.ui8_odometer_field_state = 0;
     break;
   }
+}
+
+void wheel_speed (void)
+{
+  float f_wheel_speed;
 
   // speed value
   // the value sent by the controller is for MPH and not KMH...
@@ -205,41 +255,6 @@ void clock_lcd (void)
   lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD);
   lcd_enable_kmh_symbol (1);
   lcd_enable_wheel_speed_point_symbol (1);
-
-  // motor power value
-  lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
-  lcd_enable_motor_symbol (1);
-  lcd_enable_w_symbol (1);
-
-  // show on LCD only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
-  if (ui8_timmer_counter++ >= 10)
-  {
-    ui8_timmer_counter = 0;
-
-    // battery SOC
-    lcd_enable_battery_symbols (motor_controller_data.ui8_battery_level);
-  }
-
-  // refresh LCD
-  lcd_send_frame_buffer ();
-
-  // turn off
-  if (get_button_onoff_long_click_event ())
-  {
-    // save values to EEPROM
-    configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
-    eeprom_write_variables_values (&configuration_variables);
-
-    // clear LCD so it is clear to user what is happening
-    lcd_clear_frame_buffer ();
-    lcd_send_frame_buffer ();
-
-    // now disable the power to all the system
-    GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
-
-    // block here
-    while (1) ;
-  }
 }
 
 void lcd_clear_frame_buffer (void)
@@ -636,28 +651,35 @@ void low_pass_filter_battery_voltage_current_power (void)
 
 void calc_wh (void)
 {
+  static uint8_t ui8_100ms_timmer_counter;
   static uint8_t ui8_1s_timmer_counter;
   uint32_t ui32_temp = 0;
 
-  if (ui16_battery_power_filtered_x50 > 0)
+  // calc wh every 100ms
+  if (ui8_100ms_timmer_counter++ >= 10)
   {
-    ui32_wh_sum_x5 += ui16_battery_power_filtered_x50 / 10;
-    ui32_wh_sum_counter++;
-  }
+    ui8_100ms_timmer_counter = 0;
 
-  // calc at 1s rate
-  if (ui8_1s_timmer_counter++ >= 10)
-  {
-    ui8_1s_timmer_counter = 0;
-
-    // avoid  zero divisison
-    if (ui32_wh_sum_counter != 0)
+    if (ui16_battery_power_filtered_x50 > 0)
     {
-      ui32_temp = ui32_wh_sum_counter / 36;
-      ui32_temp = (ui32_temp * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
+      ui32_wh_sum_x5 += ui16_battery_power_filtered_x50 / 10;
+      ui32_wh_sum_counter++;
     }
 
-    ui32_wh_x10 = configuration_variables.ui32_wh_x10_offset + ui32_temp;
+    // calc at 1s rate
+    if (ui8_1s_timmer_counter++ >= 10)
+    {
+      ui8_1s_timmer_counter = 0;
+
+      // avoid  zero divisison
+      if (ui32_wh_sum_counter != 0)
+      {
+        ui32_temp = ui32_wh_sum_counter / 36;
+        ui32_temp = (ui32_temp * (ui32_wh_sum_x5 / ui32_wh_sum_counter)) / 500;
+      }
+
+      ui32_wh_x10 = configuration_variables.ui32_wh_x10_offset + ui32_temp;
+    }
   }
 }
 
@@ -669,4 +691,15 @@ struct_configuration_variables* get_configuration_variables (void)
 struct_motor_controller_data* lcd_get_motor_controller_data (void)
 {
   return &motor_controller_data;
+}
+
+void lcd_init (void)
+{
+  ht1622_init ();
+  TIM1_SetCompare4 (10); // set background light
+  lcd_set_frame_buffer ();
+  lcd_send_frame_buffer();
+
+  // init variables with the stored value on EEPROM
+  eeprom_read_values_to_variables ();
 }
