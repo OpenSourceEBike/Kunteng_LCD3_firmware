@@ -170,7 +170,7 @@ void battery_soc (void)
 }
 void power (void)
 {
-  lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD);
+  lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD, 0);
   lcd_enable_motor_symbol (1);
   lcd_enable_w_symbol (1);
 }
@@ -198,7 +198,7 @@ void assist_level (void)
   }
   motor_controller_data.ui8_assist_level = configuration_variables.ui8_assist_level;
 
-  lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD);
+  lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD, 0);
   lcd_enable_assist_symbol (1);
 }
 
@@ -214,29 +214,41 @@ void odometer (void)
   if (get_button_onoff_click_event ())
   {
     clear_button_onoff_click_event ();
-    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 3;
+    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 5;
   }
 
   switch (configuration_variables.ui8_odometer_field_state)
   {
     // Wh value
     case 0:
-      lcd_print (ui32_wh_x10, ODOMETER_FIELD);
-      lcd_enable_odometer_point_symbol (1);
+      lcd_print (ui32_wh_x10, ODOMETER_FIELD, 0);
       lcd_enable_vol_symbol (0);
     break;
 
     // voltage value
     case 1:
-      lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD);
-      lcd_enable_odometer_point_symbol (1);
+      lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD, 0);
       lcd_enable_vol_symbol (1);
     break;
 
     // current value
     case 2:
-      lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD);
-      lcd_enable_odometer_point_symbol (1);
+      lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD, 0);
+      lcd_enable_vol_symbol (0);
+    break;
+
+    // pedal torque value
+    case 3:
+      lcd_print ((motor_controller_data.ui8_pedal_torque_sensor -
+          motor_controller_data.ui8_pedal_torque_sensor_offset) *
+                 10,
+          ODOMETER_FIELD, 1);
+      lcd_enable_vol_symbol (0);
+    break;
+
+    // pedal cadence value
+    case 4:
+      lcd_print (motor_controller_data.ui8_pedal_cadence * 10, ODOMETER_FIELD, 1);
       lcd_enable_vol_symbol (0);
     break;
 
@@ -257,7 +269,7 @@ void wheel_speed (void)
   // if wheel is stopped, reset speed value
   if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { f_wheel_speed = 0; }
 
-  lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD);
+  lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD, 0);
   lcd_enable_kmh_symbol (1);
   lcd_enable_wheel_speed_point_symbol (1);
 }
@@ -277,7 +289,7 @@ void lcd_send_frame_buffer (void)
   ht1622_send_frame_buffer (ui8_lcd_frame_buffer);
 }
 
-void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
+void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options)
 {
   uint8_t ui8_digit;
   uint8_t ui8_counter;
@@ -307,16 +319,13 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
     if (ui8_counter == 4 && ui8_lcd_field == 5) break;
   }
 
-  if (ui8_lcd_field == BATTERY_POWER_FIELD)
-  {
-    lcd_enable_battery_power_1_symbol (0);
-  }
+  // enable only the "1" if power is >= 1000
+  if (ui8_lcd_field == BATTERY_POWER_FIELD && ui32_number >= 1000) { lcd_enable_battery_power_1_symbol (1); }
+  else { lcd_enable_battery_power_1_symbol (0); }
 
-  // print digit by digit
-  if (ui8_lcd_field == BATTERY_POWER_FIELD && ui32_number >= 1000)
-  {
-    lcd_enable_battery_power_1_symbol (1);
-  }
+  // do not show odometer point symbol if number*10 is integer
+  if ((ui8_lcd_field == ODOMETER_FIELD) && (ui8_options == 1)) { lcd_enable_odometer_point_symbol (0); }
+  else if (ui8_lcd_field == ODOMETER_FIELD) { lcd_enable_odometer_point_symbol (1); }
 
   for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
   {
@@ -325,8 +334,14 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field)
     if (ui8_lcd_field == ASSIST_LEVEL_FIELD ||
         ui8_lcd_field == ODOMETER_FIELD)
     {
+
+      if ((ui8_options == 1) &&
+          (ui8_counter == 0))
+      {
+        ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+      }
       // print only first 2 zeros
-      if (ui8_counter > 1 && ui32_number == 0)
+      else if (ui8_counter > 1 && ui32_number == 0)
       {
         ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
       }

@@ -28,6 +28,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_wheel_size;
   uint8_t ui8_max_speed;
   uint8_t ui8_units_type;
+  uint8_t ui8_pedal_cadence;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
@@ -93,7 +94,7 @@ void lcd_enable_battery_symbols (uint8_t ui8_state);
 void lcd_send_frame_buffer (void);
 void lcd_clear_frame_buffer (void);
 void lcd_set_frame_buffer (void);
-void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field);
+void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options);
 void clock_lcd (void);
 struct_configuration_variables* get_configuration_variables (void);
 struct_motor_controller_data* lcd_get_motor_controller_data (void);
