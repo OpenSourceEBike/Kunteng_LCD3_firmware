@@ -86,12 +86,13 @@ void odometer (void);
 void wheel_speed (void);
 void power (void);
 void power_off_management (void);
-void first_time_management (void);
+uint8_t first_time_management (void);
 void battery_soc (void);
 
 void clock_lcd (void)
 {
-  first_time_management ();
+  if (first_time_management ())
+    return;
   low_pass_filter_battery_voltage_current_power ();
   calc_wh ();
   assist_level ();
@@ -104,13 +105,15 @@ void clock_lcd (void)
   power_off_management ();
 }
 
-void first_time_management (void)
+uint8_t first_time_management (void)
 {
+  uint8_t ui8_status = 0;
+
   // don't update LCD up to we get first communication package from the motor controller
   if (ui8_motor_controller_init &&
       (uart_received_first_package () == 0))
   {
-    return;
+    ui8_status = 1;
   }
   // this will be excuted only 1 time at startup
   else if (ui8_motor_controller_init)
@@ -127,6 +130,8 @@ void first_time_management (void)
       configuration_variables.ui32_wh_x10_offset = 0;
     }
   }
+
+  return ui8_status;
 }
 
 void power_off_management (void)
