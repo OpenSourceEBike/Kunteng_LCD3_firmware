@@ -72,6 +72,10 @@ static uint32_t ui32_wh_sum_x5 = 0;
 static uint32_t ui32_wh_sum_counter = 0;
 static uint32_t ui32_wh_x10 = 0;
 
+static uint32_t ui32_torque_sensor_force_x1000;
+static uint32_t ui32_torque_accumulated = 0;
+static uint16_t ui32_torque_accumulated_filtered_x10;
+
 static uint8_t ui8_motor_controller_init = 1;
 
 static struct_motor_controller_data motor_controller_data;
@@ -88,12 +92,14 @@ void power (void);
 void power_off_management (void);
 uint8_t first_time_management (void);
 void battery_soc (void);
+void low_pass_filter_pedal_torque (void);
 
 void clock_lcd (void)
 {
   if (first_time_management ())
     return;
   low_pass_filter_battery_voltage_current_power ();
+  low_pass_filter_pedal_torque ();
   calc_wh ();
   assist_level ();
   brake ();
@@ -210,11 +216,13 @@ void brake (void)
 
 void odometer (void)
 {
+  uint32_t ui32_temp;
+
   // odometer values
   if (get_button_onoff_click_event ())
   {
     clear_button_onoff_click_event ();
-    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 5;
+    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 6;
   }
 
   switch (configuration_variables.ui8_odometer_field_state)
@@ -237,17 +245,20 @@ void odometer (void)
       lcd_enable_vol_symbol (0);
     break;
 
-    // pedal torque value
+    // pedal force in Nm
     case 3:
-      lcd_print ((motor_controller_data.ui8_pedal_torque_sensor -
-          motor_controller_data.ui8_pedal_torque_sensor_offset) *
-                 10,
-          ODOMETER_FIELD, 1);
+      lcd_print (ui32_torque_sensor_force_x1000 / 100, ODOMETER_FIELD, 1);
+      lcd_enable_vol_symbol (0);
+    break;
+
+    // pedal torque in Nm
+    case 4:
+      lcd_print (ui32_torque_accumulated_filtered_x10, ODOMETER_FIELD, 1);
       lcd_enable_vol_symbol (0);
     break;
 
     // pedal cadence value
-    case 4:
+    case 5:
       lcd_print (motor_controller_data.ui8_pedal_cadence * 10, ODOMETER_FIELD, 1);
       lcd_enable_vol_symbol (0);
     break;
@@ -612,11 +623,13 @@ void lcd_enable_ttm_symbol (uint8_t ui8_state)
 
 void lcd_enable_battery_symbols (uint8_t ui8_state)
 {
-//  ui8_lcd_frame_buffer[23] |= 16;  // empty
-//  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
-//  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
-//  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
-//  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
+/*
+  ui8_lcd_frame_buffer[23] |= 16;  // empty
+  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
+  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
+  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
+  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
+  */
 
   // first clean battery symbols
   ui8_lcd_frame_buffer[23] &= ~241;
@@ -666,6 +679,38 @@ void low_pass_filter_battery_voltage_current_power (void)
   {
     ui16_battery_power_filtered /= 25;
     ui16_battery_power_filtered *= 25;
+  }
+}
+
+void low_pass_filter_pedal_torque (void)
+{
+  uint32_t ui32_torque_x10;
+  uint32_t ui32_torque_filtered_x10;
+
+  ui32_torque_sensor_force_x1000 = motor_controller_data.ui8_pedal_torque_sensor - motor_controller_data.ui8_pedal_torque_sensor_offset;
+  if (ui32_torque_sensor_force_x1000 > 200) { ui32_torque_sensor_force_x1000 = 0; }
+  ui32_torque_sensor_force_x1000 *= TORQUE_SENSOR_FORCE_SCALE_X1000;
+
+  // calc now torque
+  // P = force x rotations_seconds x 2 x pi
+  ui32_torque_x10 = (ui32_torque_sensor_force_x1000 * motor_controller_data.ui8_pedal_cadence) / 955;
+
+  // low pass filter
+  ui32_torque_accumulated -= ui32_torque_accumulated >> TORQUE_FILTER_COEFFICIENT;
+  ui32_torque_accumulated += ui32_torque_x10;
+  ui32_torque_filtered_x10 = ((uint32_t) (ui32_torque_accumulated >> TORQUE_FILTER_COEFFICIENT));
+
+  // loose resolution under 10W
+  if (ui32_torque_filtered_x10 < 1000)
+  {
+    ui32_torque_accumulated_filtered_x10 = ui32_torque_filtered_x10 / 50;
+    ui32_torque_accumulated_filtered_x10 *= 50;
+  }
+  // loose resolution under 20W
+  else
+  {
+    ui32_torque_accumulated_filtered_x10 = ui32_torque_filtered_x10 / 100;
+    ui32_torque_accumulated_filtered_x10 *= 100;
   }
 }
 

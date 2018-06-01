@@ -28,4 +28,10 @@
 #define DEFAULT_VALUE_ODOMETER_FIELD_STATE  0
 // *************************************************************************** //
 
+// Torque sensor value found experimentaly
+// measuring with a cheap digital hook scale, we found that each torque sensor unit is equal to 0.556 Nm
+// using the scale, was found that each 1kg was measured as 3 torque sensor units
+// Force (Nm) = Kg * 9.18 * 0.17 (arm cranks size)
+#define TORQUE_SENSOR_FORCE_SCALE_X1000 556
+
 #endif // _MAIN_H_

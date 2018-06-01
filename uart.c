@@ -128,7 +128,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui16_wheel_inverse_rps = ((ui8_rx_buffer[7] << 6) & 192) + ((ui8_rx_buffer[6] >> 3) & 31);
       p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[10];
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[11];
-      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12];
+      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12] << 1; // ui8_rx_buffer[12] is cadence in RPM / 2
 
       // ui8_rx_buffer[7] & 4 set means wheel is stopped
       if (ui8_rx_buffer[7] & 4) { p_motor_controller_data->ui8_motor_controller_state_2 |= 128; }
