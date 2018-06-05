@@ -139,10 +139,12 @@ void clock_uart_data (void)
       ui8_tx_buffer[0] = 0x59;
       //byte contains flags for the selected step,light and 6kmh. 40=01000000=step1. bits from left to right as i know: unknown,step1,6kmh-active,off,step4,step3,step2,headlight
       ui8_tx_buffer[1] = 0x10;
-      if (p_motor_controller_data->ui8_assist_level == 1) ui8_tx_buffer[1] = 0x40;
-      if (p_motor_controller_data->ui8_assist_level == 2) ui8_tx_buffer[1] = 0x02;
-      if (p_motor_controller_data->ui8_assist_level == 3) ui8_tx_buffer[1] = 0x04;
-      if (p_motor_controller_data->ui8_assist_level == 4) ui8_tx_buffer[1] = 0x08;
+      if (p_motor_controller_data->ui8_assist_level == 1) ui8_tx_buffer[1] = 0x80; // 4 amps
+      if (p_motor_controller_data->ui8_assist_level == 2) ui8_tx_buffer[1] = 0x40; // 6 amps
+      if (p_motor_controller_data->ui8_assist_level == 3) ui8_tx_buffer[1] = 0x02; // 12 amps
+      if (p_motor_controller_data->ui8_assist_level == 4) ui8_tx_buffer[1] = 0x04; // 18 amps
+      if (p_motor_controller_data->ui8_assist_level == 5) ui8_tx_buffer[1] = 0x08; // 18 amps and torque sensor more sensible
+
       // not sure
       ui8_tx_buffer[2] = 0;
       // wheel size, 26 = 26inch

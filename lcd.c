@@ -189,7 +189,7 @@ void assist_level (void)
     clear_button_up_click_event ();
     clear_button_up_long_click_event ();
 
-    if (configuration_variables.ui8_assist_level < 4)
+    if (configuration_variables.ui8_assist_level < 5)
       configuration_variables.ui8_assist_level++;
   }
 
@@ -245,13 +245,13 @@ void odometer (void)
       lcd_enable_vol_symbol (0);
     break;
 
-    // pedal force in Nm
+    // pedal torque in Nm
     case 3:
       lcd_print (ui32_torque_sensor_force_x1000 / 100, ODOMETER_FIELD, 1);
       lcd_enable_vol_symbol (0);
     break;
 
-    // pedal torque in Nm
+    // pedal power in watts
     case 4:
       lcd_print (ui32_torque_accumulated_filtered_x10, ODOMETER_FIELD, 1);
       lcd_enable_vol_symbol (0);

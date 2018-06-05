@@ -9,6 +9,10 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+// 13S5P, each cell 2.5Ah; P wh = 48 * (5 * 2.5) = 600; consider 550 for some losses inside battery resistance
+#define BATTERY_SIZE_WH 550
+
+
 // Battery voltage:
 // 30.0V --> 447 | 0.0671 volts per each ADC unit
 // 40.0V --> 595 | 0.0672 volts per each ADC unit
