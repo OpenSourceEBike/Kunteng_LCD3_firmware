@@ -112,6 +112,7 @@ void clock_lcd (void)
   wheel_speed ();
   power ();
   battery_soc ();
+  lights_state ();
   lcd_send_frame_buffer (); // refresh LCD
   power_off_management ();
 }
