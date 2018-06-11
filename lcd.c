@@ -78,13 +78,16 @@ static uint16_t ui32_torque_accumulated_filtered_x10;
 
 static uint8_t ui8_motor_controller_init = 1;
 
+static uint8_t ui8_lights_state = 0;
+
 static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
 
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
+void lcd_enable_lights_symbol (uint8_t ui8_state);
 void calc_wh (void);
-void assist_level (void);
+void assist_level_state (void);
 void brake (void);
 void odometer (void);
 void wheel_speed (void);
@@ -93,6 +96,8 @@ void power_off_management (void);
 uint8_t first_time_management (void);
 void battery_soc (void);
 void low_pass_filter_pedal_torque (void);
+void lights_state (void);
+void lcd_set_backlight_intensity (uint8_t ui8_intensity);
 
 void clock_lcd (void)
 {
@@ -101,7 +106,7 @@ void clock_lcd (void)
   low_pass_filter_battery_voltage_current_power ();
   low_pass_filter_pedal_torque ();
   calc_wh ();
-  assist_level ();
+  assist_level_state ();
   brake ();
   odometer ();
   wheel_speed ();
@@ -181,23 +186,19 @@ void power (void)
   lcd_enable_w_symbol (1);
 }
 
-void assist_level (void)
+void assist_level_state (void)
 {
-  if (get_button_up_click_event () ||
-      get_button_up_long_click_event ())
+  if (get_button_up_click_event ())
   {
     clear_button_up_click_event ();
-    clear_button_up_long_click_event ();
 
     if (configuration_variables.ui8_assist_level < 5)
       configuration_variables.ui8_assist_level++;
   }
 
-  if (get_button_down_click_event () ||
-      get_button_down_long_click_event ())
+  if (get_button_down_click_event ())
   {
     clear_button_down_click_event ();
-    clear_button_down_long_click_event ();
 
     if (configuration_variables.ui8_assist_level > 0)
       configuration_variables.ui8_assist_level--;
@@ -206,6 +207,29 @@ void assist_level (void)
 
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD, 0);
   lcd_enable_assist_symbol (1);
+}
+
+void lights_state (void)
+{
+  if (get_button_up_long_click_event ())
+  {
+    clear_button_up_long_click_event ();
+
+    if (ui8_lights_state == 0)
+    {
+      ui8_lights_state = 1;
+      lcd_enable_lights_symbol (1);
+      lcd_set_backlight_intensity (5); // TODO: implement backlight intensity control
+      motor_controller_data.ui8_lights |= 1;
+    }
+    else
+    {
+      ui8_lights_state = 0;
+      lcd_enable_lights_symbol (0);
+      lcd_set_backlight_intensity (0);
+      motor_controller_data.ui8_lights &= ~1;
+    }
+  }
 }
 
 void brake (void)
@@ -761,10 +785,17 @@ struct_motor_controller_data* lcd_get_motor_controller_data (void)
 void lcd_init (void)
 {
   ht1622_init ();
-  TIM1_SetCompare4 (10); // set background light
   lcd_set_frame_buffer ();
   lcd_send_frame_buffer();
 
   // init variables with the stored value on EEPROM
   eeprom_read_values_to_variables ();
+}
+
+void lcd_set_backlight_intensity (uint8_t ui8_intensity)
+{
+  if ((ui8_intensity >= 0) && (ui8_intensity <= 9))
+  {
+    TIM1_SetCompare4 (ui8_intensity); // set background light
+  }
 }
