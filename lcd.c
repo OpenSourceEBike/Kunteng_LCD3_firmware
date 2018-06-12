@@ -79,6 +79,10 @@ static uint16_t ui32_torque_accumulated_filtered_x10;
 static uint8_t ui8_motor_controller_init = 1;
 
 static uint8_t ui8_lights_state = 0;
+static uint8_t lcd_lights_symbol = 0;
+static uint8_t lcd_backlight_intensity = 0;
+
+static uint8_t ui8_lcd_walk_symbol = 0;
 
 static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
@@ -103,8 +107,9 @@ void walk_assist_state (void);
 
 void clock_lcd (void)
 {
+  lcd_clear (); // start by clear LCD
   if (first_time_management ())
-    return;
+//    return;
   low_pass_filter_battery_voltage_current_power ();
   low_pass_filter_pedal_torque ();
   calc_wh ();
@@ -116,7 +121,7 @@ void clock_lcd (void)
   battery_soc ();
   lights_state ();
   walk_assist_state ();
-  lcd_send_frame_buffer (); // refresh LCD
+  lcd_update ();
   power_off_management ();
 }
 
@@ -124,20 +129,20 @@ uint8_t first_time_management (void)
 {
   uint8_t ui8_status = 0;
 
-  // don't update LCD up to we get first communication package from the motor controller
-  if (ui8_motor_controller_init &&
-      (uart_received_first_package () == 0))
-  {
-    ui8_status = 1;
-  }
-  // this will be executed only 1 time at startup
-  else if (ui8_motor_controller_init)
+//  // don't update LCD up to we get first communication package from the motor controller
+//  if (ui8_motor_controller_init &&
+//      (uart_received_first_package () == 0))
+//  {
+//    ui8_status = 1;
+//  }
+//  // this will be executed only 1 time at startup
+//  else if (ui8_motor_controller_init)
+if (ui8_motor_controller_init)
   {
     ui8_motor_controller_init = 0;
-    lcd_clear_frame_buffer (); // let's clear LCD
 
     // wait for a first good read value of ADC: voltage can't be 0
-    while (ui16_adc_read_battery_voltage_10b () == 0) ;
+//    while (ui16_adc_read_battery_voltage_10b () == 0) ;
 
     // reset Wh value if battery is over 54.4V (when battery is near fully charged)
     if (((uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
@@ -159,8 +164,8 @@ void power_off_management (void)
     eeprom_write_variables_values ();
 
     // clear LCD so it is clear to user what is happening
-    lcd_clear_frame_buffer ();
-    lcd_send_frame_buffer ();
+    lcd_clear ();
+    lcd_update ();
 
     // now disable the power to all the system
     GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
@@ -173,15 +178,17 @@ void power_off_management (void)
 void battery_soc (void)
 {
   static uint8_t ui8_timmer_counter;
+  static uint8_t ui8_battery_level;
 
-  // show on LCD only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
+  // update battery level value only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 10)
   {
     ui8_timmer_counter = 0;
-
-    // battery SOC
-    lcd_enable_battery_symbols (motor_controller_data.ui8_battery_level);
+    ui8_battery_level = motor_controller_data.ui8_battery_level;
   }
+
+  // battery SOC
+  lcd_enable_battery_symbols (ui8_battery_level);
 }
 void power (void)
 {
@@ -222,18 +229,21 @@ void lights_state (void)
     if (ui8_lights_state == 0)
     {
       ui8_lights_state = 1;
-      lcd_enable_lights_symbol (1);
-      lcd_set_backlight_intensity (5); // TODO: implement backlight intensity control
+      lcd_lights_symbol = 1;
+      lcd_backlight_intensity = 5;
       motor_controller_data.ui8_lights = 1;
     }
     else
     {
       ui8_lights_state = 0;
-      lcd_enable_lights_symbol (0);
-      lcd_set_backlight_intensity (0);
+      lcd_lights_symbol = 0;
+      lcd_backlight_intensity = 0;
       motor_controller_data.ui8_lights = 0;
     }
   }
+
+  lcd_enable_lights_symbol (lcd_lights_symbol);
+  lcd_set_backlight_intensity (lcd_backlight_intensity); // TODO: implement backlight intensity control
 }
 
 void walk_assist_state (void)
@@ -243,16 +253,18 @@ void walk_assist_state (void)
     // user need to keep pressing the button to have walk assist
     if (get_button_down_state ())
     {
-      lcd_enable_walk_symbol (1);
+      ui8_lcd_walk_symbol = 1;
       motor_controller_data.ui8_walk_assist_level = 1;
     }
     else
     {
-      lcd_enable_walk_symbol (0);
+      ui8_lcd_walk_symbol = 0;
       motor_controller_data.ui8_walk_assist_level = 0;
       clear_button_down_long_click_event ();
     }
   }
+
+  lcd_enable_walk_symbol (ui8_lcd_walk_symbol);
 }
 
 void brake (void)
@@ -332,7 +344,7 @@ void wheel_speed (void)
   lcd_enable_wheel_speed_point_symbol (1);
 }
 
-void lcd_clear_frame_buffer (void)
+void lcd_clear (void)
 {
   memset(ui8_lcd_frame_buffer, 0, LCD_FRAME_BUFFER_SIZE);
 }
@@ -342,7 +354,7 @@ void lcd_set_frame_buffer (void)
   memset(ui8_lcd_frame_buffer, 255, LCD_FRAME_BUFFER_SIZE);
 }
 
-void lcd_send_frame_buffer (void)
+void lcd_update (void)
 {
   ht1622_send_frame_buffer (ui8_lcd_frame_buffer);
 }
@@ -809,7 +821,7 @@ void lcd_init (void)
 {
   ht1622_init ();
   lcd_set_frame_buffer ();
-  lcd_send_frame_buffer();
+  lcd_update();
 
   // init variables with the stored value on EEPROM
   eeprom_read_values_to_variables ();

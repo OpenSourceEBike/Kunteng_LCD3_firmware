@@ -150,7 +150,7 @@ void clock_uart_data (void)
       if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[1] |= 0x01;
 
       // walk assist level state
-      if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x10;
+      if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
 
       // not sure
       ui8_tx_buffer[2] = 0;
