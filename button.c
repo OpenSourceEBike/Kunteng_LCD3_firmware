@@ -160,7 +160,7 @@ void clock_button (void)
       }
 
       // event long click
-      if (ui8_down_button_state_counter++ > 250) // 2.5 seconds
+      if (ui8_down_button_state_counter++ > 200) // 2 seconds
       {
         ui8_down_button_state = 2;
         ui8_down_button_state_counter = 0;
@@ -200,7 +200,7 @@ void clock_button (void)
       }
 
       // event long click
-      if (ui8_up_button_state_counter++ > 250) // 2.5 seconds
+      if (ui8_up_button_state_counter++ > 200) // 2 seconds
       {
         ui8_up_button_state = 2;
         ui8_up_button_state_counter = 0;

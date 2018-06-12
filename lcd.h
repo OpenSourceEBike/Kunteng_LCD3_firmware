@@ -30,6 +30,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_units_type;
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
+  uint8_t ui8_walk_assist_level;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables

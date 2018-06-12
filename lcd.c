@@ -86,6 +86,7 @@ static struct_configuration_variables configuration_variables;
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
 void lcd_enable_lights_symbol (uint8_t ui8_state);
+void lcd_enable_walk_symbol (uint8_t ui8_state);
 void calc_wh (void);
 void assist_level_state (void);
 void brake (void);
@@ -98,6 +99,7 @@ void battery_soc (void);
 void low_pass_filter_pedal_torque (void);
 void lights_state (void);
 void lcd_set_backlight_intensity (uint8_t ui8_intensity);
+void walk_assist_state (void);
 
 void clock_lcd (void)
 {
@@ -113,6 +115,7 @@ void clock_lcd (void)
   power ();
   battery_soc ();
   lights_state ();
+  walk_assist_state ();
   lcd_send_frame_buffer (); // refresh LCD
   power_off_management ();
 }
@@ -127,7 +130,7 @@ uint8_t first_time_management (void)
   {
     ui8_status = 1;
   }
-  // this will be excuted only 1 time at startup
+  // this will be executed only 1 time at startup
   else if (ui8_motor_controller_init)
   {
     ui8_motor_controller_init = 0;
@@ -221,14 +224,33 @@ void lights_state (void)
       ui8_lights_state = 1;
       lcd_enable_lights_symbol (1);
       lcd_set_backlight_intensity (5); // TODO: implement backlight intensity control
-      motor_controller_data.ui8_lights |= 1;
+      motor_controller_data.ui8_lights = 1;
     }
     else
     {
       ui8_lights_state = 0;
       lcd_enable_lights_symbol (0);
       lcd_set_backlight_intensity (0);
-      motor_controller_data.ui8_lights &= ~1;
+      motor_controller_data.ui8_lights = 0;
+    }
+  }
+}
+
+void walk_assist_state (void)
+{
+  if (get_button_down_long_click_event ())
+  {
+    // user need to keep pressing the button to have walk assist
+    if (get_button_down_state ())
+    {
+      lcd_enable_walk_symbol (1);
+      motor_controller_data.ui8_walk_assist_level = 1;
+    }
+    else
+    {
+      lcd_enable_walk_symbol (0);
+      motor_controller_data.ui8_walk_assist_level = 0;
+      clear_button_down_long_click_event ();
     }
   }
 }
