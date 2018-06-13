@@ -94,6 +94,18 @@ void clear_button_onoff_long_click_event (void)
   ui8_buttons_events &= ~(1 << 1);
 }
 
+uint8_t get_button_up_down_click_event (void)
+{
+  if (ui8_buttons_events & (1 << 6))
+    return 1;
+  return 0;
+}
+
+void clear_button_up_down_click_event (void)
+{
+  ui8_buttons_events &= ~(1 << 6);
+}
+
 uint8_t button_get_events (void)
 {
   return ui8_buttons_events;
@@ -144,8 +156,9 @@ void clock_button (void)
   switch (ui8_down_button_state)
   {
     case 0:
-      if (!get_button_down_click_event () &&
-          !get_button_down_long_click_event () &&
+      if (!(get_button_down_click_event () &&
+          get_button_down_long_click_event () &&
+          get_button_up_down_click_event ()) &&
           get_button_down_state ())
         ui8_down_button_state = 1;
     break;
@@ -162,9 +175,19 @@ void clock_button (void)
       // event long click
       if (ui8_down_button_state_counter++ > 200) // 2 seconds
       {
+        // up and down button click
+        if (ui8_up_button_state == 1)
+        {
+          ui8_buttons_events |= (1 << 6);
+          ui8_up_button_state = 2;
+        }
+        else
+        {
+          ui8_buttons_events |= (1 << 5);
+        }
+
         ui8_down_button_state = 2;
         ui8_down_button_state_counter = 0;
-        ui8_buttons_events |= (1 << 3);
       }
     break;
 
@@ -184,8 +207,9 @@ void clock_button (void)
   switch (ui8_up_button_state)
   {
     case 0:
-      if (!get_button_up_click_event () &&
-          !get_button_up_long_click_event () &&
+      if (!(get_button_up_click_event () &&
+          get_button_up_long_click_event () &&
+          get_button_up_down_click_event ()) &&
           get_button_up_state ())
         ui8_up_button_state = 1;
     break;
@@ -202,9 +226,19 @@ void clock_button (void)
       // event long click
       if (ui8_up_button_state_counter++ > 200) // 2 seconds
       {
+        // up and down button click
+        if (ui8_down_button_state == 1)
+        {
+          ui8_buttons_events |= (1 << 6);
+          ui8_down_button_state = 2;
+        }
+        else
+        {
+          ui8_buttons_events |= (1 << 5);
+        }
+
         ui8_up_button_state = 2;
         ui8_up_button_state_counter = 0;
-        ui8_buttons_events |= (1 << 5);
       }
     break;
 

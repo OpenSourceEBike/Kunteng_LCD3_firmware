@@ -84,6 +84,10 @@ static uint8_t lcd_backlight_intensity = 0;
 
 static uint8_t ui8_lcd_walk_symbol = 0;
 
+static uint8_t ui8_lcd_menu = 0;
+static uint8_t ui8_lcd_menu_flash_counter = 0;
+static uint8_t ui8_lcd_menu_flash_state;
+
 static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
 
@@ -91,6 +95,9 @@ void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
 void lcd_enable_lights_symbol (uint8_t ui8_state);
 void lcd_enable_walk_symbol (uint8_t ui8_state);
+void lcd_enable_km_symbol (uint8_t ui8_state);
+void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
+void lcd_enable_kmh_symbol (uint8_t ui8_state);
 void calc_wh (void);
 void assist_level_state (void);
 void brake (void);
@@ -104,15 +111,39 @@ void low_pass_filter_pedal_torque (void);
 void lights_state (void);
 void lcd_set_backlight_intensity (uint8_t ui8_intensity);
 void walk_assist_state (void);
+void lcd_execute_menu_0 (void);
+void lcd_execute_menu_1 (void);
 
 void clock_lcd (void)
 {
   lcd_clear (); // start by clear LCD
   if (first_time_management ())
-//    return;
+    return;
+
+  if (get_button_up_down_click_event () &&
+      ui8_lcd_menu != 1)
+    {
+      clear_button_up_down_click_event ();
+      ui8_lcd_menu = 1;
+    }
+
+  if (ui8_lcd_menu == 0)
+    lcd_execute_menu_0 ();
+  else if (ui8_lcd_menu == 1)
+  {
+    lcd_execute_menu_1 ();
+  }
+
   low_pass_filter_battery_voltage_current_power ();
   low_pass_filter_pedal_torque ();
   calc_wh ();
+
+  lcd_update ();
+  power_off_management ();
+}
+
+void lcd_execute_menu_0 (void)
+{
   assist_level_state ();
   brake ();
   odometer ();
@@ -121,8 +152,49 @@ void clock_lcd (void)
   battery_soc ();
   lights_state ();
   walk_assist_state ();
-  lcd_update ();
-  power_off_management ();
+}
+
+void lcd_execute_menu_1 (void)
+{
+  if (get_button_up_click_event ())
+  {
+    clear_button_up_click_event ();
+    if (configuration_variables.ui8_max_speed < 99)
+      configuration_variables.ui8_max_speed++;
+  }
+
+  if (get_button_down_click_event ())
+  {
+    clear_button_down_click_event ();
+    if (configuration_variables.ui8_max_speed > 0)
+      configuration_variables.ui8_max_speed--;
+  }
+
+  // update flashing state
+  if (ui8_lcd_menu_flash_counter++ > 50)
+  {
+    ui8_lcd_menu_flash_counter = 0;
+
+    if (ui8_lcd_menu_flash_state)
+      ui8_lcd_menu_flash_state = 0;
+    else
+      ui8_lcd_menu_flash_state = 1;
+  }
+
+  // print wheel speed only half of the time
+  if (ui8_lcd_menu_flash_state)
+  {
+    lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
+    lcd_enable_wheel_speed_point_symbol (1);
+  }
+  lcd_enable_kmh_symbol (1);
+
+  // leave this menu if button_up_down_click_event
+  if (get_button_up_down_click_event ())
+  {
+    clear_button_up_down_click_event ();
+    ui8_lcd_menu = 0;
+  }
 }
 
 uint8_t first_time_management (void)

@@ -27,6 +27,8 @@ uint8_t get_button_onoff_click_event (void);
 uint8_t get_button_onoff_long_click_event (void);
 void clear_button_onoff_click_event (void);
 void clear_button_onoff_long_click_event (void);
+uint8_t get_button_up_down_click_event (void);
+void clear_button_up_down_click_event (void);
 void clock_button (void);
 uint8_t button_get_events (void);
 
