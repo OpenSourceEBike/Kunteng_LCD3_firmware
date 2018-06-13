@@ -85,6 +85,7 @@ static uint8_t lcd_backlight_intensity = 0;
 static uint8_t ui8_lcd_walk_symbol = 0;
 
 static uint8_t ui8_lcd_menu = 0;
+static uint8_t ui8_lcd_menu_1_state = 0;
 static uint8_t ui8_lcd_menu_flash_counter = 0;
 static uint8_t ui8_lcd_menu_flash_state;
 
@@ -156,18 +157,12 @@ void lcd_execute_menu_0 (void)
 
 void lcd_execute_menu_1 (void)
 {
-  if (get_button_up_click_event ())
+  // leve this menu with a button_onoff_long_click
+  if (get_button_onoff_long_click_event ())
   {
-    clear_button_up_click_event ();
-    if (configuration_variables.ui8_max_speed < 99)
-      configuration_variables.ui8_max_speed++;
-  }
-
-  if (get_button_down_click_event ())
-  {
-    clear_button_down_click_event ();
-    if (configuration_variables.ui8_max_speed > 0)
-      configuration_variables.ui8_max_speed--;
+    clear_button_onoff_long_click_event ();
+    ui8_lcd_menu_1_state = 0;
+    ui8_lcd_menu = 0;
   }
 
   // update flashing state
@@ -181,19 +176,70 @@ void lcd_execute_menu_1 (void)
       ui8_lcd_menu_flash_state = 1;
   }
 
-  // print wheel speed only half of the time
-  if (ui8_lcd_menu_flash_state)
+  switch (ui8_lcd_menu_1_state)
   {
-    lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
-    lcd_enable_wheel_speed_point_symbol (1);
-  }
-  lcd_enable_kmh_symbol (1);
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_max_speed < 99)
+          configuration_variables.ui8_max_speed++;
+      }
 
-  // leave this menu if button_up_down_click_event
-  if (get_button_up_down_click_event ())
-  {
-    clear_button_up_down_click_event ();
-    ui8_lcd_menu = 0;
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_max_speed > 0)
+          configuration_variables.ui8_max_speed--;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_1_state = 1;
+      }
+
+      // print wheel speed only half of the time
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
+        lcd_enable_wheel_speed_point_symbol (1);
+      }
+      lcd_enable_kmh_symbol (1);
+      break;
+
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        // max value is 30 inchs wheel
+        if (configuration_variables.ui8_wheel_size < 30)
+          configuration_variables.ui8_wheel_size++;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        // min value is 16 inchs wheel
+        if (configuration_variables.ui8_wheel_size > 16)
+          configuration_variables.ui8_wheel_size--;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_1_state = 0;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        // if wheel size is 27, print on LCD "700" instead
+        if (configuration_variables.ui8_wheel_size != 27)
+          lcd_print (configuration_variables.ui8_wheel_size * 10, ODOMETER_FIELD, 1);
+        else
+          lcd_print (700 * 10, ODOMETER_FIELD, 1);
+      }
+      break;
   }
 }
 
