@@ -154,12 +154,12 @@ void clock_uart_data (void)
 
       // not sure
       ui8_tx_buffer[2] = 0;
-      // wheel size, 26 = 26inch
-      ui8_tx_buffer[3] = 26;
+      // wheel size
+      ui8_tx_buffer[3] = p_motor_controller_data->ui8_wheel_size;
       // not sure
       ui8_tx_buffer[4] = 0;
-      // target max wheel speed, 25 = 25(kmh?)
-      ui8_tx_buffer[5] = 45;
+      // target max wheel speed
+      ui8_tx_buffer[5] = p_motor_controller_data->ui8_max_speed;
 
       ui8_checksum = 0;
       for (ui8_i = 0; ui8_i <= 5; ui8_i++)

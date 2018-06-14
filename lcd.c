@@ -82,8 +82,6 @@ static uint8_t ui8_lights_state = 0;
 static uint8_t lcd_lights_symbol = 0;
 static uint8_t lcd_backlight_intensity = 0;
 
-static uint8_t ui8_lcd_walk_symbol = 0;
-
 static uint8_t ui8_lcd_menu = 0;
 static uint8_t ui8_lcd_menu_1_state = 0;
 static uint8_t ui8_lcd_menu_flash_counter = 0;
@@ -99,6 +97,7 @@ void lcd_enable_walk_symbol (uint8_t ui8_state);
 void lcd_enable_km_symbol (uint8_t ui8_state);
 void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_enable_kmh_symbol (uint8_t ui8_state);
+void lcd_enable_mph_symbol (uint8_t ui8_state);
 void calc_wh (void);
 void assist_level_state (void);
 void brake (void);
@@ -123,10 +122,10 @@ void clock_lcd (void)
 
   if (get_button_up_down_click_event () &&
       ui8_lcd_menu != 1)
-    {
-      clear_button_up_down_click_event ();
-      ui8_lcd_menu = 1;
-    }
+  {
+    clear_button_up_down_click_event ();
+    ui8_lcd_menu = 1;
+  }
 
   if (ui8_lcd_menu == 0)
     lcd_execute_menu_0 ();
@@ -163,6 +162,9 @@ void lcd_execute_menu_1 (void)
     clear_button_onoff_long_click_event ();
     ui8_lcd_menu_1_state = 0;
     ui8_lcd_menu = 0;
+
+    // save the updated variables on EEPROM
+    eeprom_write_variables_values ();
   }
 
   // update flashing state
@@ -178,6 +180,7 @@ void lcd_execute_menu_1 (void)
 
   switch (ui8_lcd_menu_1_state)
   {
+    // menu to choose max wheel speed
     case 0:
       if (get_button_up_click_event ())
       {
@@ -189,7 +192,7 @@ void lcd_execute_menu_1 (void)
       if (get_button_down_click_event ())
       {
         clear_button_down_click_event ();
-        if (configuration_variables.ui8_max_speed > 0)
+        if (configuration_variables.ui8_max_speed > 2)
           configuration_variables.ui8_max_speed--;
       }
 
@@ -205,9 +208,14 @@ void lcd_execute_menu_1 (void)
         lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
         lcd_enable_wheel_speed_point_symbol (1);
       }
-      lcd_enable_kmh_symbol (1);
-      break;
 
+      if (configuration_variables.ui8_units_type)
+        lcd_enable_mph_symbol (1);
+      else
+        lcd_enable_kmh_symbol (1);
+    break;
+
+    // menu to choose wheel size
     case 1:
       if (get_button_up_click_event ())
       {
@@ -228,7 +236,7 @@ void lcd_execute_menu_1 (void)
       if (get_button_onoff_click_event ())
       {
         clear_button_onoff_click_event ();
-        ui8_lcd_menu_1_state = 0;
+        ui8_lcd_menu_1_state = 2;
       }
 
       if (ui8_lcd_menu_flash_state)
@@ -239,7 +247,38 @@ void lcd_execute_menu_1 (void)
         else
           lcd_print (700 * 10, ODOMETER_FIELD, 1);
       }
-      break;
+    break;
+
+    // menu to choose Km/h or MP/h
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_units_type < 1)
+          configuration_variables.ui8_units_type++;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_units_type > 0)
+          configuration_variables.ui8_units_type--;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_1_state = 0;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        if (configuration_variables.ui8_units_type)
+          lcd_enable_mph_symbol (1);
+        else
+          lcd_enable_kmh_symbol (1);
+      }
+    break;
   }
 }
 
@@ -247,20 +286,20 @@ uint8_t first_time_management (void)
 {
   uint8_t ui8_status = 0;
 
-//  // don't update LCD up to we get first communication package from the motor controller
-//  if (ui8_motor_controller_init &&
-//      (uart_received_first_package () == 0))
-//  {
-//    ui8_status = 1;
-//  }
-//  // this will be executed only 1 time at startup
-//  else if (ui8_motor_controller_init)
-if (ui8_motor_controller_init)
+  // don't update LCD up to we get first communication package from the motor controller
+  if (ui8_motor_controller_init &&
+      (uart_received_first_package () == 0))
+  {
+    ui8_status = 1;
+  }
+  // this will be executed only 1 time at startup
+  else if (ui8_motor_controller_init)
+//if (ui8_motor_controller_init)
   {
     ui8_motor_controller_init = 0;
 
     // wait for a first good read value of ADC: voltage can't be 0
-//    while (ui16_adc_read_battery_voltage_10b () == 0) ;
+    while (ui16_adc_read_battery_voltage_10b () == 0) ;
 
     // reset Wh value if battery is over 54.4V (when battery is near fully charged)
     if (((uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
@@ -371,18 +410,15 @@ void walk_assist_state (void)
     // user need to keep pressing the button to have walk assist
     if (get_button_down_state ())
     {
-      ui8_lcd_walk_symbol = 1;
       motor_controller_data.ui8_walk_assist_level = 1;
+      lcd_enable_walk_symbol (1);
     }
     else
     {
-      ui8_lcd_walk_symbol = 0;
       motor_controller_data.ui8_walk_assist_level = 0;
       clear_button_down_long_click_event ();
     }
   }
-
-  lcd_enable_walk_symbol (ui8_lcd_walk_symbol);
 }
 
 void brake (void)
@@ -448,18 +484,37 @@ void odometer (void)
 
 void wheel_speed (void)
 {
+  uint16_t ui16_wheel_perimeter;
+  uint8_t ui8_wheel_speed;
   float f_wheel_speed;
+
+  // wheel perimeter size calculation:
+  // P (mm) = rim diameter * inchs_to_mm * pi
+  // example: P (mm) = 26 * 25.4 * 3.14 = 2073
+  ui16_wheel_perimeter = configuration_variables.ui8_wheel_size * 78;
 
   // speed value
   // the value sent by the controller is for MPH and not KMH...
   // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
-  f_wheel_speed = 1.0 / (((float) motor_controller_data.ui16_wheel_inverse_rps * 1.6) / 7380);
-  // if wheel is stopped, reset speed value
-  if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { f_wheel_speed = 0; }
+  // km/h
+  f_wheel_speed = 1.406 / (((float) motor_controller_data.ui16_wheel_inverse_rps) / ((float) ui16_wheel_perimeter));
 
-  lcd_print (f_wheel_speed, WHEEL_SPEED_FIELD, 0);
-  lcd_enable_kmh_symbol (1);
+  // Mph
+  if (configuration_variables.ui8_units_type)
+  {
+    f_wheel_speed *= 1.6;
+  }
+  ui8_wheel_speed = (uint8_t) f_wheel_speed;
+
+  // if wheel is stopped, reset speed value
+  if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { ui8_wheel_speed = 0; }
+
+  lcd_print (ui8_wheel_speed, WHEEL_SPEED_FIELD, 0);
   lcd_enable_wheel_speed_point_symbol (1);
+  if (configuration_variables.ui8_units_type)
+    lcd_enable_mph_symbol (1);
+  else
+    lcd_enable_kmh_symbol (1);
 }
 
 void lcd_clear (void)

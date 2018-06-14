@@ -41,7 +41,7 @@ void clear_button_up_click_event (void)
 
 void clear_button_up_long_click_event (void)
 {
-  ui8_buttons_events &= ~(1 << 5);
+  ui8_buttons_events &= ~((1 << 5) + (1 << 4));
 }
 
 uint8_t get_button_down_state (void)
@@ -66,7 +66,7 @@ void clear_button_down_click_event (void)
 
 void clear_button_down_long_click_event (void)
 {
-  ui8_buttons_events &= ~(1 << 3);
+  ui8_buttons_events &= ~((1 << 3) + (1 << 2));
 }
 
 uint8_t get_button_onoff_state (void)
@@ -91,7 +91,7 @@ void clear_button_onoff_click_event (void)
 
 void clear_button_onoff_long_click_event (void)
 {
-  ui8_buttons_events &= ~(1 << 1);
+  ui8_buttons_events &= ~((1 << 1) + (1 << 0));
 }
 
 uint8_t get_button_up_down_click_event (void)
@@ -183,7 +183,7 @@ void clock_button (void)
         }
         else
         {
-          ui8_buttons_events |= (1 << 5);
+          ui8_buttons_events |= (1 << 3);
         }
 
         ui8_down_button_state = 2;
