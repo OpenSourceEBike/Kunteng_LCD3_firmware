@@ -90,6 +90,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
 void clock_uart_data (void)
 {
   struct_motor_controller_data *p_motor_controller_data;
+  struct_configuration_variables *p_configuration_variables;
 
   if (ui8_received_package_flag)
   {
@@ -119,6 +120,7 @@ void clock_uart_data (void)
     if (ui8_checksum_1st_package && ui8_checksum_2nd_package)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
+      p_configuration_variables = get_configuration_variables ();
 
       p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1]; // a value between 0 and 24
       p_motor_controller_data->ui8_motor_controller_state_1 = ui8_rx_buffer[2];
@@ -140,11 +142,11 @@ void clock_uart_data (void)
 
       // set assist level value
       ui8_tx_buffer[1] = 0x10; // ~2 amps
-      if (p_motor_controller_data->ui8_assist_level == 1) ui8_tx_buffer[1] = 0x80; // ~4 amps
-      if (p_motor_controller_data->ui8_assist_level == 2) ui8_tx_buffer[1] = 0x40; // ~6 amps
-      if (p_motor_controller_data->ui8_assist_level == 3) ui8_tx_buffer[1] = 0x02; // ~12 amps
-      if (p_motor_controller_data->ui8_assist_level == 4) ui8_tx_buffer[1] = 0x04; // ~18 amps
-      if (p_motor_controller_data->ui8_assist_level == 5) ui8_tx_buffer[1] = 0x08; // ~18 amps and torque sensor more sensible
+      if (p_configuration_variables->ui8_assist_level == 1) ui8_tx_buffer[1] = 0x80; // ~4 amps
+      if (p_configuration_variables->ui8_assist_level == 2) ui8_tx_buffer[1] = 0x40; // ~6 amps
+      if (p_configuration_variables->ui8_assist_level == 3) ui8_tx_buffer[1] = 0x02; // ~12 amps
+      if (p_configuration_variables->ui8_assist_level == 4) ui8_tx_buffer[1] = 0x04; // ~18 amps
+      if (p_configuration_variables->ui8_assist_level == 5) ui8_tx_buffer[1] = 0x08; // ~18 amps and torque sensor more sensible
 
       // set lights state
       if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[1] |= 0x01;
@@ -152,14 +154,15 @@ void clock_uart_data (void)
       // walk assist level state
       if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
 
-      // not sure
-      ui8_tx_buffer[2] = 0;
+      // motor power in 10 watts unit
+      ui8_tx_buffer[2] = p_configuration_variables->ui8_target_max_battery_power;
+
       // wheel size
-      ui8_tx_buffer[3] = p_motor_controller_data->ui8_wheel_size;
+      ui8_tx_buffer[3] = p_configuration_variables->ui8_wheel_size;
       // not sure
       ui8_tx_buffer[4] = 0;
       // target max wheel speed
-      ui8_tx_buffer[5] = p_motor_controller_data->ui8_max_speed;
+      ui8_tx_buffer[5] = p_configuration_variables->ui8_max_speed;
 
       ui8_checksum = 0;
       for (ui8_i = 0; ui8_i <= 5; ui8_i++)

@@ -56,14 +56,15 @@ void eeprom_read_values_to_variables (void)
 
   ui32_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_0);
   ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_1);
-  ui32_temp += ((ui8_temp << 8) & 0xff00);
+  ui32_temp += (((uint32_t) ui8_temp << 8) & 0xff00);
   ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_2);
-  ui32_temp += ((ui8_temp << 16) & 0xff0000);
+  ui32_temp += (((uint32_t) ui8_temp << 16) & 0xff0000);
   ui8_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_3);
-  ui32_temp += ((ui8_temp << 24) & 0xff000000);
+  ui32_temp += (((uint32_t) ui8_temp << 24) & 0xff000000);
   p_configuration_variables->ui32_wh_x10_offset = ui32_temp;
 
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
+  p_configuration_variables->ui8_target_max_battery_power = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
 }
 
 void eeprom_write_variables_values (void)
@@ -80,6 +81,7 @@ void eeprom_write_variables_values (void)
   array_values [7] = (p_configuration_variables->ui32_wh_x10_offset >> 16) & 255;
   array_values [8] = (p_configuration_variables->ui32_wh_x10_offset >> 24) & 255;
   array_values [9] = p_configuration_variables->ui8_odometer_field_state;
+  array_values [10] = p_configuration_variables->ui8_target_max_battery_power;
 
   eeprom_write_array (array_values);
 }

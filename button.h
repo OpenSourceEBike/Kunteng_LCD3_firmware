@@ -31,5 +31,6 @@ uint8_t get_button_up_down_click_event (void);
 void clear_button_up_down_click_event (void);
 void clock_button (void);
 uint8_t button_get_events (void);
+void button_clear_events (void);
 
 #endif /* _BUTTON_H_ */

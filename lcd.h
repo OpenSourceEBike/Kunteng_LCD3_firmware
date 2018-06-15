@@ -24,10 +24,6 @@ typedef struct _motor_controller_data
   uint16_t ui16_wheel_inverse_rps;
   uint8_t ui8_battery_current;
   uint8_t ui8_motor_controller_state_2;
-  uint8_t ui8_assist_level;
-  uint8_t ui8_wheel_size;
-  uint8_t ui8_max_speed;
-  uint8_t ui8_units_type;
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
   uint8_t ui8_walk_assist_level;
@@ -41,6 +37,7 @@ typedef struct _configuration_variables
   uint8_t ui8_units_type;
   uint32_t ui32_wh_x10_offset;
   uint8_t ui8_odometer_field_state;
+  uint8_t ui8_target_max_battery_power;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

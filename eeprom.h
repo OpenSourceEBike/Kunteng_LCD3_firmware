@@ -24,7 +24,8 @@
 #define ADDRESS_HW_X10_OFFSET_2             7 + EEPROM_BASE_ADDRESS
 #define ADDRESS_HW_X10_OFFSET_3             8 + EEPROM_BASE_ADDRESS
 #define ADDRESS_ODOMETER_FIELD_STATE        9 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                 10
+#define ADDRESS_TARGET_MAX_BATTERY_POWER    10 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                 11
 
 void eeprom_init (void);
 void eeprom_read_values_to_variables (void);

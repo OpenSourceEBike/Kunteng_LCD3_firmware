@@ -111,6 +111,14 @@ uint8_t button_get_events (void)
   return ui8_buttons_events;
 }
 
+void button_clear_events (void)
+{
+  ui8_buttons_events = 0;
+  ui8_onoff_button_state = 0;
+  ui8_up_button_state = 0;
+  ui8_down_button_state = 0;
+}
+
 void clock_button (void)
 {
   switch (ui8_onoff_button_state)
@@ -193,7 +201,7 @@ void clock_button (void)
 
     case 2:
       // wait for button release
-      if (!get_button_onoff_state ())
+      if (!get_button_down_state ())
       {
         ui8_down_button_state = 0;
       }

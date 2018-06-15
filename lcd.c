@@ -113,6 +113,8 @@ void lcd_set_backlight_intensity (uint8_t ui8_intensity);
 void walk_assist_state (void);
 void lcd_execute_menu_0 (void);
 void lcd_execute_menu_1 (void);
+void lcd_execute_menu_2 (void);
+void update_menu_flashing_state (void);
 
 void clock_lcd (void)
 {
@@ -120,6 +122,9 @@ void clock_lcd (void)
   if (first_time_management ())
     return;
 
+  update_menu_flashing_state ();
+
+  // enter menu configurations
   if (get_button_up_down_click_event () &&
       ui8_lcd_menu != 1)
   {
@@ -127,11 +132,27 @@ void clock_lcd (void)
     ui8_lcd_menu = 1;
   }
 
-  if (ui8_lcd_menu == 0)
-    lcd_execute_menu_0 ();
-  else if (ui8_lcd_menu == 1)
+  // enter in menu set power
+  if (get_button_onoff_state () &&
+      get_button_up_state ())
   {
-    lcd_execute_menu_1 ();
+    button_clear_events ();
+    ui8_lcd_menu = 2;
+  }
+
+  switch (ui8_lcd_menu)
+  {
+    case 0:
+      lcd_execute_menu_0 ();
+    break;
+
+    case 1:
+      lcd_execute_menu_1 ();
+    break;
+
+    case 2:
+      lcd_execute_menu_2 ();
+    break;
   }
 
   low_pass_filter_battery_voltage_current_power ();
@@ -167,17 +188,6 @@ void lcd_execute_menu_1 (void)
     eeprom_write_variables_values ();
   }
 
-  // update flashing state
-  if (ui8_lcd_menu_flash_counter++ > 50)
-  {
-    ui8_lcd_menu_flash_counter = 0;
-
-    if (ui8_lcd_menu_flash_state)
-      ui8_lcd_menu_flash_state = 0;
-    else
-      ui8_lcd_menu_flash_state = 1;
-  }
-
   switch (ui8_lcd_menu_1_state)
   {
     // menu to choose max wheel speed
@@ -209,10 +219,7 @@ void lcd_execute_menu_1 (void)
         lcd_enable_wheel_speed_point_symbol (1);
       }
 
-      if (configuration_variables.ui8_units_type)
-        lcd_enable_mph_symbol (1);
-      else
-        lcd_enable_kmh_symbol (1);
+      lcd_enable_kmh_symbol (1);
     break;
 
     // menu to choose wheel size
@@ -279,6 +286,41 @@ void lcd_execute_menu_1 (void)
           lcd_enable_kmh_symbol (1);
       }
     break;
+  }
+}
+
+void lcd_execute_menu_2 (void)
+{
+  // because this click envent can happens and will block the detection of button_onoff_long_click_event
+  clear_button_onoff_click_event ();
+
+  // leave this menu with a button_onoff_long_click
+  if (get_button_onoff_long_click_event ())
+  {
+    button_clear_events ();
+    ui8_lcd_menu = 0;
+
+    // save the updated variables on EEPROM
+    eeprom_write_variables_values ();
+  }
+
+  if (get_button_up_click_event ())
+  {
+    button_clear_events ();
+    if (configuration_variables.ui8_target_max_battery_power < 195) // the BATTERY_POWER_FIELD can't show higher value
+      configuration_variables.ui8_target_max_battery_power += 5;
+  }
+
+  if (get_button_down_click_event ())
+  {
+    button_clear_events ();
+    if (configuration_variables.ui8_target_max_battery_power > 5)
+      configuration_variables.ui8_target_max_battery_power -= 5;
+  }
+
+  if (ui8_lcd_menu_flash_state)
+  {
+    lcd_print (configuration_variables.ui8_target_max_battery_power * 10, BATTERY_POWER_FIELD, 0);
   }
 }
 
@@ -371,7 +413,6 @@ void assist_level_state (void)
     if (configuration_variables.ui8_assist_level > 0)
       configuration_variables.ui8_assist_level--;
   }
-  motor_controller_data.ui8_assist_level = configuration_variables.ui8_assist_level;
 
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD, 0);
   lcd_enable_assist_symbol (1);
@@ -496,11 +537,11 @@ void wheel_speed (void)
   // speed value
   // the value sent by the controller is for MPH and not KMH...
   // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
-  // km/h
+  // Mph
   f_wheel_speed = 1.406 / (((float) motor_controller_data.ui16_wheel_inverse_rps) / ((float) ui16_wheel_perimeter));
 
-  // Mph
-  if (configuration_variables.ui8_units_type)
+  // km/h
+  if (configuration_variables.ui8_units_type == 0)
   {
     f_wheel_speed *= 1.6;
   }
@@ -1005,5 +1046,18 @@ void lcd_set_backlight_intensity (uint8_t ui8_intensity)
   if ((ui8_intensity >= 0) && (ui8_intensity <= 9))
   {
     TIM1_SetCompare4 (ui8_intensity); // set background light
+  }
+}
+
+void update_menu_flashing_state (void)
+{
+  if (ui8_lcd_menu_flash_counter++ > 50)
+  {
+    ui8_lcd_menu_flash_counter = 0;
+
+    if (ui8_lcd_menu_flash_state)
+      ui8_lcd_menu_flash_state = 0;
+    else
+      ui8_lcd_menu_flash_state = 1;
   }
 }
