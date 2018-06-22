@@ -526,31 +526,31 @@ void odometer (void)
 void wheel_speed (void)
 {
   uint16_t ui16_wheel_perimeter;
-  uint8_t ui8_wheel_speed;
-  float f_wheel_speed;
+  uint16_t ui16_wheel_speed_10;
+  float f_wheel_speed_x10;
 
   // wheel perimeter size calculation:
   // P (mm) = rim diameter * inchs_to_mm * pi
   // example: P (mm) = 26 * 25.4 * 3.14 = 2073
-  ui16_wheel_perimeter = configuration_variables.ui8_wheel_size * 78;
+  ui16_wheel_perimeter = configuration_variables.ui8_wheel_size * 80;
 
   // speed value
   // the value sent by the controller is for MPH and not KMH...
   // (1÷((controller_sent_time÷3600)÷wheel_perimeter)÷1.6)
   // Mph
-  f_wheel_speed = 1.406 / (((float) motor_controller_data.ui16_wheel_inverse_rps) / ((float) ui16_wheel_perimeter));
+  f_wheel_speed_x10 = 2.25 / (((float) motor_controller_data.ui16_wheel_inverse_rps) / ((float) ui16_wheel_perimeter));
 
   // km/h
-  if (configuration_variables.ui8_units_type == 0)
+  if (configuration_variables.ui8_units_type == 1)
   {
-    f_wheel_speed *= 1.6;
+    f_wheel_speed_x10 /= 1.40625; // 2.25 / 1.6 = 1.40625
   }
-  ui8_wheel_speed = (uint8_t) f_wheel_speed;
+  ui16_wheel_speed_10 = (uint16_t) f_wheel_speed_x10;
 
   // if wheel is stopped, reset speed value
-  if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { ui8_wheel_speed = 0; }
+  if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { ui16_wheel_speed_10 = 0; }
 
-  lcd_print (ui8_wheel_speed, WHEEL_SPEED_FIELD, 0);
+  lcd_print (ui16_wheel_speed_10, WHEEL_SPEED_FIELD, 0);
   lcd_enable_wheel_speed_point_symbol (1);
   if (configuration_variables.ui8_units_type)
     lcd_enable_mph_symbol (1);
