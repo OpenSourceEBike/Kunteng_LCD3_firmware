@@ -20,12 +20,14 @@
 
 // *************************************************************************** //
 // EEPROM memory variables default values
-#define DEFAULT_VALUE_ASSIST_LEVEL          2
-#define DEFAULT_VALUE_WHEEL_SIZE            26
-#define DEFAULT_VALUE_MAX_SPEED             45
-#define DEFAULT_VALUE_UNITS_TYPE            1 // 1 = km/h
-#define DEFAULT_VALUE_WH_OFFSET             0
-#define DEFAULT_VALUE_ODOMETER_FIELD_STATE  0
+#define DEFAULT_VALUE_ASSIST_LEVEL                2
+#define DEFAULT_VALUE_WHEEL_SIZE                  26
+#define DEFAULT_VALUE_MAX_SPEED                   45
+#define DEFAULT_VALUE_UNITS_TYPE                  1 // 1 = km/h
+#define DEFAULT_VALUE_WH_OFFSET                   0
+#define DEFAULT_VALUE_HW_X10_100_PERCENT          0
+#define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC    0
+#define DEFAULT_VALUE_ODOMETER_FIELD_STATE        0
 // *************************************************************************** //
 
 // Torque sensor value found experimentaly

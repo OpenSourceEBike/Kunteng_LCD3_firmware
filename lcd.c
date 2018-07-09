@@ -21,14 +21,16 @@
 #include "pins.h"
 #include "uart.h"
 
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 1
+
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
 uint8_t ui8_lcd_field_offset[] = {
     ASSIST_LEVEL_DIGIT_OFFSET,
     ODOMETER_DIGIT_OFFSET,
+    TEMPERATURE_DIGIT_OFFSET,
     WHEEL_SPEED_OFFSET,
     BATTERY_POWER_DIGIT_OFFSET,
-    0,
     0
 };
 
@@ -71,6 +73,7 @@ static uint16_t ui16_battery_power_filtered;
 static uint32_t ui32_wh_sum_x5 = 0;
 static uint32_t ui32_wh_sum_counter = 0;
 static uint32_t ui32_wh_x10 = 0;
+static uint8_t ui8_config_wh_x10_offset;
 
 static uint32_t ui32_torque_sensor_force_x1000;
 static uint32_t ui32_torque_accumulated = 0;
@@ -83,9 +86,12 @@ static uint8_t lcd_lights_symbol = 0;
 static uint8_t lcd_backlight_intensity = 0;
 
 static uint8_t ui8_lcd_menu = 0;
-static uint8_t ui8_lcd_menu_1_state = 0;
+static uint8_t ui8_lcd_menu_config_submenu_0_state = 0;
+static uint8_t ui8_lcd_menu_config_submenu_1_state = 0;
 static uint8_t ui8_lcd_menu_flash_counter = 0;
 static uint8_t ui8_lcd_menu_flash_state;
+static uint8_t ui8_lcd_menu_config_submenu_number = 0;
+static uint8_t ui8_lcd_menu_config_submenu_active = 0;
 
 static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
@@ -106,14 +112,17 @@ void wheel_speed (void);
 void power (void);
 void power_off_management (void);
 uint8_t first_time_management (void);
+void temperature (void);
 void battery_soc (void);
 void low_pass_filter_pedal_torque (void);
 void lights_state (void);
 void lcd_set_backlight_intensity (uint8_t ui8_intensity);
 void walk_assist_state (void);
-void lcd_execute_menu_0 (void);
-void lcd_execute_menu_1 (void);
-void lcd_execute_menu_2 (void);
+void lcd_execute_main_screen (void);
+void lcd_execute_menu_config (void);
+void lcd_execute_menu_config_power (void);
+void lcd_execute_menu_config_submenu_0 (void);
+void lcd_execute_menu_config_submenu_1 (void);
 void update_menu_flashing_state (void);
 
 void clock_lcd (void)
@@ -124,7 +133,7 @@ void clock_lcd (void)
 
   update_menu_flashing_state ();
 
-  // enter menu configurations
+  // enter menu configurations: UP + DOWN click event
   if (get_button_up_down_click_event () &&
       ui8_lcd_menu != 1)
   {
@@ -132,7 +141,7 @@ void clock_lcd (void)
     ui8_lcd_menu = 1;
   }
 
-  // enter in menu set power
+  // enter in menu set power: ONOFF + UP click event
   if (get_button_onoff_state () &&
       get_button_up_state ())
   {
@@ -143,15 +152,15 @@ void clock_lcd (void)
   switch (ui8_lcd_menu)
   {
     case 0:
-      lcd_execute_menu_0 ();
+      lcd_execute_main_screen ();
     break;
 
     case 1:
-      lcd_execute_menu_1 ();
+      lcd_execute_menu_config ();
     break;
 
     case 2:
-      lcd_execute_menu_2 ();
+      lcd_execute_menu_config_power ();
     break;
   }
 
@@ -160,35 +169,105 @@ void clock_lcd (void)
   calc_wh ();
 
   lcd_update ();
+
+  // power off system: ONOFF long click event
   power_off_management ();
 }
 
-void lcd_execute_menu_0 (void)
+void lcd_execute_main_screen (void)
 {
   assist_level_state ();
-  brake ();
   odometer ();
+  temperature ();
   wheel_speed ();
+  walk_assist_state ();
   power ();
   battery_soc ();
   lights_state ();
-  walk_assist_state ();
+  brake ();
 }
 
-void lcd_execute_menu_1 (void)
+void lcd_execute_menu_config (void)
 {
-  // leve this menu with a button_onoff_long_click
-  if (get_button_onoff_long_click_event ())
+  // button check when submenu is not active
+  if (!ui8_lcd_menu_config_submenu_active)
   {
-    clear_button_onoff_long_click_event ();
-    ui8_lcd_menu_1_state = 0;
-    ui8_lcd_menu = 0;
+    // leave config menu with a button_onoff_long_click
+    if (get_button_onoff_long_click_event ())
+    {
+      clear_button_onoff_long_click_event ();
+      ui8_lcd_menu_config_submenu_0_state = 0;
+      ui8_lcd_menu = 0;
 
-    // save the updated variables on EEPROM
-    eeprom_write_variables_values ();
+      // save the updated variables on EEPROM
+      eeprom_write_variables_values ();
+
+      return;
+    }
+
+    // check for change of submenu number
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+
+      if (ui8_lcd_menu_config_submenu_number < LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER)
+        ui8_lcd_menu_config_submenu_number++;
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+
+      if (ui8_lcd_menu_config_submenu_number > 0)
+        ui8_lcd_menu_config_submenu_number--;
+    }
+
+    // check if we should enter a submenu
+    if (get_button_onoff_click_event ())
+    {
+      clear_button_onoff_click_event ();
+
+      ui8_lcd_menu_config_submenu_active = 1;
+      ui8_config_wh_x10_offset = 1;
+    }
+
+    // print submenu number only half of the time
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (ui8_lcd_menu_config_submenu_number * 10, WHEEL_SPEED_FIELD, 1);
+    }
   }
+  // ui8_lcd_menu_config_submenu_active == 1
+  else
+  {
+    switch (ui8_lcd_menu_config_submenu_number)
+    {
+      case 0:
+        lcd_execute_menu_config_submenu_0 ();
+      break;
 
-  switch (ui8_lcd_menu_1_state)
+      case 1:
+        lcd_execute_menu_config_submenu_1 ();
+      break;
+
+      default:
+        ui8_lcd_menu_config_submenu_number = 0;
+      break;
+    }
+
+    // leave config menu with a button_onoff_long_click
+    if (get_button_onoff_long_click_event ())
+    {
+      clear_button_onoff_long_click_event ();
+
+      ui8_lcd_menu_config_submenu_active = 0;
+    }
+  }
+}
+
+void lcd_execute_menu_config_submenu_0 (void)
+{
+  switch (ui8_lcd_menu_config_submenu_0_state)
   {
     // menu to choose max wheel speed
     case 0:
@@ -209,14 +288,13 @@ void lcd_execute_menu_1 (void)
       if (get_button_onoff_click_event ())
       {
         clear_button_onoff_click_event ();
-        ui8_lcd_menu_1_state = 1;
+        ui8_lcd_menu_config_submenu_0_state = 1;
       }
 
       // print wheel speed only half of the time
       if (ui8_lcd_menu_flash_state)
       {
         lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
-        lcd_enable_wheel_speed_point_symbol (1);
       }
 
       lcd_enable_kmh_symbol (1);
@@ -243,7 +321,7 @@ void lcd_execute_menu_1 (void)
       if (get_button_onoff_click_event ())
       {
         clear_button_onoff_click_event ();
-        ui8_lcd_menu_1_state = 2;
+        ui8_lcd_menu_config_submenu_0_state = 2;
       }
 
       if (ui8_lcd_menu_flash_state)
@@ -275,7 +353,7 @@ void lcd_execute_menu_1 (void)
       if (get_button_onoff_click_event ())
       {
         clear_button_onoff_click_event ();
-        ui8_lcd_menu_1_state = 0;
+        ui8_lcd_menu_config_submenu_0_state = 0;
       }
 
       if (ui8_lcd_menu_flash_state)
@@ -289,7 +367,145 @@ void lcd_execute_menu_1 (void)
   }
 }
 
-void lcd_execute_menu_2 (void)
+void lcd_execute_menu_config_submenu_1 (void)
+{
+  uint8_t ui8_temp;
+
+  switch (ui8_lcd_menu_config_submenu_1_state)
+  {
+    // menu to enable/disable show of numeric watts hour value
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_show_numeric_battery_soc |= 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_show_numeric_battery_soc &= ~1;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_config_submenu_1_state = 1;
+      }
+
+      ui8_temp = ((configuration_variables.ui8_show_numeric_battery_soc & 1) ? 10 : 0);
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (ui8_temp, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // menu to enable/disable show of numeric watts hour value in incrementing or decementing percentage
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_show_numeric_battery_soc |= 2;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_show_numeric_battery_soc &= ~2;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_config_submenu_1_state = 2;
+      }
+
+      ui8_temp = ((configuration_variables.ui8_show_numeric_battery_soc & 2) ? 10 : 0);
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (ui8_temp, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // menu to choose watts hour value to be equal to 100% of battery SOC
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        button_clear_events ();
+
+        // increment at 10 units
+        if (configuration_variables.ui32_wh_x10_100_percent < 100000)
+          configuration_variables.ui32_wh_x10_100_percent += 100;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        button_clear_events ();
+
+        if (configuration_variables.ui32_wh_x10_100_percent > 200)
+          configuration_variables.ui32_wh_x10_100_percent -= 100;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_config_submenu_1_state = 3;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui32_wh_x10_100_percent, ODOMETER_FIELD, 0);
+      }
+    break;
+
+    // menu to set current watts hour value
+    case 3:
+      // on the very first time, use current value of ui32_wh_x10
+      if (ui8_config_wh_x10_offset)
+      {
+        ui8_config_wh_x10_offset = 0;
+        configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
+      }
+      // keep reseting this values
+      ui32_wh_sum_x5 = 0;
+      ui32_wh_sum_counter = 0;
+      ui32_wh_x10 = 0;
+
+      if (get_button_up_click_event ())
+      {
+        button_clear_events ();
+
+        // increment at 10 units
+        configuration_variables.ui32_wh_x10_offset += 100;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        button_clear_events ();
+
+        if (configuration_variables.ui32_wh_x10_offset >= 100)
+          configuration_variables.ui32_wh_x10_offset -= 100;
+        else if (configuration_variables.ui32_wh_x10_offset < 100)
+          configuration_variables.ui32_wh_x10_offset = 0;
+      }
+
+      if (get_button_onoff_click_event ())
+      {
+        clear_button_onoff_click_event ();
+        ui8_lcd_menu_config_submenu_1_state = 0;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui32_wh_x10_offset, ODOMETER_FIELD, 0);
+      }
+    break;
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_1_state * 10, WHEEL_SPEED_FIELD, 1);
+}
+
+void lcd_execute_menu_config_power (void)
 {
   // because this click envent can happens and will block the detection of button_onoff_long_click_event
   clear_button_onoff_click_event ();
@@ -336,7 +552,6 @@ uint8_t first_time_management (void)
   }
   // this will be executed only 1 time at startup
   else if (ui8_motor_controller_init)
-//if (ui8_motor_controller_init)
   {
     ui8_motor_controller_init = 0;
 
@@ -371,6 +586,40 @@ void power_off_management (void)
 
     // block here
     while (1) ;
+  }
+}
+
+void temperature (void)
+{
+  uint32_t ui32_temp;
+
+  if (configuration_variables.ui8_show_numeric_battery_soc & 1)
+  {
+    ui32_temp = ui32_wh_x10 * 100;
+    if (configuration_variables.ui32_wh_x10_100_percent > 0)
+    {
+      ui32_temp /= configuration_variables.ui32_wh_x10_100_percent;
+    }
+    else
+    {
+      ui32_temp = 0;
+    }
+
+    // show 100% - current SOC or just current SOC
+    if (configuration_variables.ui8_show_numeric_battery_soc & 2)
+    {
+      // show always 1 unit more
+      ui32_temp++;
+      if (ui32_temp > 100)
+        ui32_temp = 100;
+
+      lcd_print (100 - ui32_temp, TEMPERATURE_FIELD, 0);
+    }
+    else
+    {
+      // show always 1 unit more
+      lcd_print (ui32_temp + 1, TEMPERATURE_FIELD, 0);
+    }
   }
 }
 
@@ -470,8 +719,6 @@ void brake (void)
 
 void odometer (void)
 {
-  uint32_t ui32_temp;
-
   // odometer values
   if (get_button_onoff_click_event ())
   {
@@ -551,7 +798,6 @@ void wheel_speed (void)
   if (motor_controller_data.ui8_motor_controller_state_2 & 128)  { ui16_wheel_speed_10 = 0; }
 
   lcd_print (ui16_wheel_speed_10, WHEEL_SPEED_FIELD, 0);
-  lcd_enable_wheel_speed_point_symbol (1);
   if (configuration_variables.ui8_units_type)
     lcd_enable_mph_symbol (1);
   else
@@ -582,7 +828,8 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
   for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
   {
     if (ui8_lcd_field == ASSIST_LEVEL_FIELD ||
-            ui8_lcd_field == ODOMETER_FIELD)
+            ui8_lcd_field == ODOMETER_FIELD ||
+            ui8_lcd_field == TEMPERATURE_FIELD)
     {
       ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= NUMBERS_MASK;
     }
@@ -597,6 +844,7 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
     // limit the number of printed digits for each field
     if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
     if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
+    if (ui8_counter == 1 && ui8_lcd_field == TEMPERATURE_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;
@@ -604,19 +852,38 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
   }
 
   // enable only the "1" if power is >= 1000
-  if (ui8_lcd_field == BATTERY_POWER_FIELD && ui32_number >= 1000) { lcd_enable_battery_power_1_symbol (1); }
-  else { lcd_enable_battery_power_1_symbol (0); }
+  if (ui8_lcd_field == BATTERY_POWER_FIELD)
+  {
+    if (ui32_number >= 1000) { lcd_enable_battery_power_1_symbol (1); }
+    else { lcd_enable_battery_power_1_symbol (0); }
+  }
 
-  // do not show odometer point symbol if number*10 is integer
-  if ((ui8_lcd_field == ODOMETER_FIELD) && (ui8_options == 1)) { lcd_enable_odometer_point_symbol (0); }
-  else if (ui8_lcd_field == ODOMETER_FIELD) { lcd_enable_odometer_point_symbol (1); }
+  // enable only the "1" if temperature is >= 100
+  if (ui8_lcd_field == TEMPERATURE_FIELD)
+  {
+    if (ui32_number >= 100) { lcd_enable_temperature_1_symbol (1); }
+    else { lcd_enable_temperature_1_symbol (0); }
+  }
+
+  // do not show the point symbol if number*10 is integer
+  if (ui8_options == 1)
+  {
+    if (ui8_lcd_field == ODOMETER_FIELD) { lcd_enable_odometer_point_symbol (0); }
+    else if (ui8_lcd_field == WHEEL_SPEED_FIELD) { lcd_enable_wheel_speed_point_symbol (0); }
+  }
+  else
+  {
+    if (ui8_lcd_field == ODOMETER_FIELD) { lcd_enable_odometer_point_symbol (1); }
+    else if (ui8_lcd_field == WHEEL_SPEED_FIELD) { lcd_enable_wheel_speed_point_symbol (1); }
+  }
 
   for (ui8_counter = 0; ui8_counter < 5; ui8_counter++)
   {
     ui8_digit = ui32_number % 10;
 
     if (ui8_lcd_field == ASSIST_LEVEL_FIELD ||
-        ui8_lcd_field == ODOMETER_FIELD)
+            ui8_lcd_field == ODOMETER_FIELD ||
+            ui8_lcd_field == TEMPERATURE_FIELD)
     {
 
       if ((ui8_options == 1) &&
@@ -641,8 +908,13 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
     {
       if (ui8_lcd_field == WHEEL_SPEED_FIELD)
       {
+        if ((ui8_options == 1) &&
+            (ui8_counter == 0))
+        {
+          ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
+        }
         // print only first 2 zeros
-        if (ui8_counter > 1 && ui32_number == 0)
+        else if (ui8_counter > 1 && ui32_number == 0)
         {
           ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] + ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
         }
@@ -669,6 +941,7 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
     // limit the number of printed digits for each field
     if (ui8_counter == 0 && ui8_lcd_field == ASSIST_LEVEL_FIELD) break;
     if (ui8_counter == 4 && ui8_lcd_field == ODOMETER_FIELD) break;
+    if (ui8_counter == 1 && ui8_lcd_field == TEMPERATURE_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == 4) break;

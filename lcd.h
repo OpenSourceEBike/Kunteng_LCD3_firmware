@@ -36,6 +36,8 @@ typedef struct _configuration_variables
   uint8_t ui8_max_speed;
   uint8_t ui8_units_type;
   uint32_t ui32_wh_x10_offset;
+  uint32_t ui32_wh_x10_100_percent;
+  uint8_t ui8_show_numeric_battery_soc;
   uint8_t ui8_odometer_field_state;
   uint8_t ui8_target_max_battery_power;
 } struct_configuration_variables;
@@ -47,12 +49,14 @@ extern uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
 #define ASSIST_LEVEL_FIELD     0
 #define ODOMETER_FIELD         1
-#define WHEEL_SPEED_FIELD      2
-#define BATTERY_POWER_FIELD    3
+#define TEMPERATURE_FIELD      2
+#define WHEEL_SPEED_FIELD      3
+#define BATTERY_POWER_FIELD    4
 
 // each digit needs 7 bits to be defined + 1 digit that can be another symbol like a "point"
 #define ASSIST_LEVEL_DIGIT_OFFSET     1 // 8
 #define ODOMETER_DIGIT_OFFSET         6
+#define TEMPERATURE_DIGIT_OFFSET      8
 #define WHEEL_SPEED_OFFSET            14
 #define BATTERY_POWER_DIGIT_OFFSET    10
 
@@ -87,6 +91,7 @@ void lcd_enable_odometer_point_symbol (uint8_t ui8_state);
 void lcd_enable_brake_symbol (uint8_t ui8_state);
 void lcd_enable_assist_symbol (uint8_t ui8_state);
 void lcd_enable_battery_power_1_symbol (uint8_t ui8_state);
+void lcd_enable_temperature_1_symbol (uint8_t ui8_state);
 void lcd_enable_kmh_symbol (uint8_t ui8_state);
 void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_enable_battery_symbols (uint8_t ui8_state);
