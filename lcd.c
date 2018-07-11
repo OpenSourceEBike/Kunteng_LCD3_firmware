@@ -701,7 +701,7 @@ void walk_assist_state (void)
     {
       motor_controller_data.ui8_walk_assist_level = 1;
       lcd_enable_walk_symbol (1);
-      if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_max_speed = 99; } //kts: OffRoad-Mode!
+      if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_max_speed = 99; } //Offroad-Mode enabled!
     }
     else
     {
@@ -724,7 +724,7 @@ void odometer (void)
   {
     clear_button_onoff_click_event ();
     configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 6;
-    configuration_variables.ui8_max_speed = 25; // kts: get back to OnRoad-Mode
+    configuration_variables.ui8_max_speed = 25; //Offroad-Mode disabled 
   }
 
   switch (configuration_variables.ui8_odometer_field_state)
