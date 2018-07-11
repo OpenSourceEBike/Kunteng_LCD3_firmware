@@ -442,8 +442,10 @@ void lcd_execute_menu_config_submenu_1 (void)
       {
         button_clear_events ();
 
-        if (configuration_variables.ui32_wh_x10_100_percent > 200)
+        if (configuration_variables.ui32_wh_x10_100_percent >= 100)
           configuration_variables.ui32_wh_x10_100_percent -= 100;
+        else if (configuration_variables.ui32_wh_x10_100_percent < 100)
+          configuration_variables.ui32_wh_x10_100_percent = 0;
       }
 
       if (get_button_onoff_click_event ())
@@ -608,8 +610,6 @@ void temperature (void)
     // show 100% - current SOC or just current SOC
     if (configuration_variables.ui8_show_numeric_battery_soc & 2)
     {
-      // show always 1 unit more
-      ui32_temp++;
       if (ui32_temp > 100)
         ui32_temp = 100;
 
@@ -617,8 +617,7 @@ void temperature (void)
     }
     else
     {
-      // show always 1 unit more
-      lcd_print (ui32_temp + 1, TEMPERATURE_FIELD, 0);
+      lcd_print (ui32_temp, TEMPERATURE_FIELD, 0);
     }
   }
 }
@@ -849,8 +848,6 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
     if (ui8_counter == 1 && ui8_lcd_field == TEMPERATURE_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
-    if (ui8_counter == 2 && ui8_lcd_field == 4) break;
-    if (ui8_counter == 4 && ui8_lcd_field == 5) break;
   }
 
   // enable only the "1" if power is >= 1000
@@ -893,8 +890,10 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
       {
         ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
       }
-      // print only first 2 zeros
-      else if (ui8_counter > 1 && ui32_number == 0)
+      // print empty (NUMBERS_MASK) when ui32_number = 0
+      else if ((ui8_counter > 1 && ui32_number == 0) ||
+          // TEMPERATURE_FIELD: print 1 zero only when value is less than 10
+          (ui8_lcd_field == TEMPERATURE_FIELD && ui8_counter > 0 && ui32_number == 0))
       {
         ui8_lcd_frame_buffer[ui8_lcd_field_offset[ui8_lcd_field] - ui8_counter] &= ui8_lcd_digit_mask[NUMBERS_MASK];
       }
@@ -946,8 +945,6 @@ void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options
     if (ui8_counter == 1 && ui8_lcd_field == TEMPERATURE_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == WHEEL_SPEED_FIELD) break;
     if (ui8_counter == 2 && ui8_lcd_field == BATTERY_POWER_FIELD) break;
-    if (ui8_counter == 2 && ui8_lcd_field == 4) break;
-    if (ui8_counter == 4 && ui8_lcd_field == 5) break;
 
     ui32_number /= 10;
   }
