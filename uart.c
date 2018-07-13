@@ -127,7 +127,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui8_pedal_torque_sensor_offset = ui8_rx_buffer[3];
       p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[4];
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[5];
-      p_motor_controller_data->ui16_wheel_inverse_rps = ((ui8_rx_buffer[7] << 6) & 192) + ((ui8_rx_buffer[6] >> 3) & 31);
+      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [7]) << 8) + ((uint16_t) ui8_rx_buffer [6]);
       p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[10];
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[11];
       p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12] << 1; // ui8_rx_buffer[12] is cadence in RPM / 2
@@ -157,10 +157,10 @@ void clock_uart_data (void)
       // motor power in 10 watts unit
       ui8_tx_buffer[2] = p_configuration_variables->ui8_target_max_battery_power;
 
-      // wheel size
-      ui8_tx_buffer[3] = p_configuration_variables->ui8_wheel_size;
-      // not sure
-      ui8_tx_buffer[4] = 0;
+      // wheel perimeter
+      ui8_tx_buffer[3] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
+      ui8_tx_buffer[4] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
+
       // target max wheel speed
       ui8_tx_buffer[5] = p_configuration_variables->ui8_max_speed;
 
