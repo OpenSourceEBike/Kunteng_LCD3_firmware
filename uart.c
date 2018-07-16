@@ -141,15 +141,10 @@ void clock_uart_data (void)
       ui8_tx_buffer[0] = 0x59;
 
       // set assist level value
-      ui8_tx_buffer[1] = 0x10; // ~2 amps
-      if (p_configuration_variables->ui8_assist_level == 1) ui8_tx_buffer[1] = 0x80; // ~4 amps
-      if (p_configuration_variables->ui8_assist_level == 2) ui8_tx_buffer[1] = 0x40; // ~6 amps
-      if (p_configuration_variables->ui8_assist_level == 3) ui8_tx_buffer[1] = 0x02; // ~12 amps
-      if (p_configuration_variables->ui8_assist_level == 4) ui8_tx_buffer[1] = 0x04; // ~18 amps
-      if (p_configuration_variables->ui8_assist_level == 5) ui8_tx_buffer[1] = 0x08; // ~18 amps and torque sensor more sensible
+      ui8_tx_buffer[1] = p_configuration_variables->ui8_assist_level & 0x0f;
 
       // set lights state
-      if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[1] |= 0x01;
+      if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[1] |= 0x10;
 
       // walk assist level state
       if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
