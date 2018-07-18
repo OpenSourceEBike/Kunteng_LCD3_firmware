@@ -18,8 +18,12 @@ typedef struct _motor_controller_data
 {
   uint8_t ui8_battery_level;
   uint8_t ui8_motor_controller_state_1;
-  uint8_t ui8_pedal_torque_sensor_offset;
+  uint8_t ui8_adc_throttle;
+  uint8_t ui8_throttle;
+  uint8_t ui8_adc_pedal_torque_sensor;
   uint8_t ui8_pedal_torque_sensor;
+  uint8_t ui8_pedal_human_power;
+  uint8_t ui8_duty_cycle;
   uint8_t ui8_error_code;
   uint16_t ui16_wheel_speed_x10;
   uint8_t ui8_battery_current;
@@ -27,6 +31,8 @@ typedef struct _motor_controller_data
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
   uint8_t ui8_walk_assist_level;
+  uint16_t ui16_motor_speed_erps;
+  uint8_t ui8_foc_angle;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables

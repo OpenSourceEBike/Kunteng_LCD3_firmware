@@ -15,14 +15,12 @@
 #include "lcd.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[21];
+volatile uint8_t ui8_rx_buffer[18];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[7];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
-volatile uint8_t ui8_checksum_1st_package;
-volatile uint8_t ui8_checksum_2nd_package;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 volatile uint8_t ui8_uart_received_first_package = 0;
@@ -94,47 +92,33 @@ void clock_uart_data (void)
 
   if (ui8_received_package_flag)
   {
-    // validation of the 1st package data
+    // validation of the package data
     // last byte is the checksum
     ui8_checksum = 0;
-    for (ui8_i = 0; ui8_i <= 7; ui8_i++)
+    for (ui8_i = 0; ui8_i <= 16; ui8_i++)
     {
       ui8_checksum += ui8_rx_buffer[ui8_i];
     }
-    ui8_checksum_1st_package = ui8_checksum % 256;
-    if (ui8_checksum_1st_package == ui8_rx_buffer [8]) { ui8_checksum_1st_package = 1; }
-    else { ui8_checksum_1st_package = 0; }
 
-    // validation of the 2nd package data
-    // last byte is the checksum
-    ui8_checksum = 0;
-    for (ui8_i = 9; ui8_i <= 19; ui8_i++)
-    {
-      ui8_checksum += ui8_rx_buffer[ui8_i];
-    }
-    ui8_checksum_2nd_package = ui8_checksum % 256;
-    if (ui8_checksum_2nd_package == ui8_rx_buffer [20]) { ui8_checksum_2nd_package = 1; }
-    else { ui8_checksum_2nd_package = 0; }
-
-    // see if both checksum are ok...
-    if (ui8_checksum_1st_package && ui8_checksum_2nd_package)
+    if (ui8_checksum && ui8_rx_buffer [17])
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
       p_configuration_variables = get_configuration_variables ();
 
-      p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1]; // a value between 0 and 24
-      p_motor_controller_data->ui8_motor_controller_state_1 = ui8_rx_buffer[2];
-      p_motor_controller_data->ui8_pedal_torque_sensor_offset = ui8_rx_buffer[3];
-      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[4];
-      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[5];
-      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [7]) << 8) + ((uint16_t) ui8_rx_buffer [6]);
-      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[10];
-      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[11];
-      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12] << 1; // ui8_rx_buffer[12] is cadence in RPM / 2
-
-      // ui8_rx_buffer[7] & 4 set means wheel is stopped
-      if (ui8_rx_buffer[7] & 4) { p_motor_controller_data->ui8_motor_controller_state_2 |= 128; }
-      else { p_motor_controller_data->ui8_motor_controller_state_2 &= ~128; }
+      p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1];
+      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[2];
+      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [4]) << 8) + ((uint16_t) ui8_rx_buffer [3]);
+      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[5];
+      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[6];
+      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[8];
+      p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[9];
+      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[10];
+      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[11];
+      p_motor_controller_data->ui8_pedal_human_power = ui8_rx_buffer[12];
+      p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[13];
+      p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [15]) << 8) + ((uint16_t) ui8_rx_buffer [14]);
+      p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[16];
 
       // now send the data to the motor controller
       // start up byte
