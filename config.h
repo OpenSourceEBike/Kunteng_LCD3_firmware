@@ -18,7 +18,7 @@
 // 40.0V --> 595 | 0.0672 volts per each ADC unit
 
 // Battery voltage (readed on motor controller):
-#define ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000 859
+#define ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000 863
 
 // Possible values: 0, 1, 2, 3, 4, 5, 6
 // 0 equal to no filtering and no delay, higher values will increase filtering but will also add bigger delay
