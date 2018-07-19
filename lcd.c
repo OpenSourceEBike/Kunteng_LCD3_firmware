@@ -468,47 +468,44 @@ void lcd_execute_menu_config_submenu_1 (void)
 
 void lcd_execute_menu_config_submenu_2 (void)
 {
-  struct_motor_controller_data *p_motor_controller_data;
-  p_motor_controller_data = lcd_get_motor_controller_data ();
-
   advance_on_submenu (&ui8_lcd_menu_config_submenu_2_state, 9);
 
   switch (ui8_lcd_menu_config_submenu_2_state)
   {
     case 0:
-      lcd_print (p_motor_controller_data->ui8_adc_throttle, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_adc_throttle, ODOMETER_FIELD, 1);
     break;
 
     case 1:
-      lcd_print (p_motor_controller_data->ui8_throttle, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_throttle, ODOMETER_FIELD, 1);
     break;
 
     case 2:
-      lcd_print (p_motor_controller_data->ui8_adc_pedal_torque_sensor, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_adc_pedal_torque_sensor, ODOMETER_FIELD, 1);
     break;
 
     case 3:
-      lcd_print (p_motor_controller_data->ui8_pedal_torque_sensor, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_pedal_torque_sensor, ODOMETER_FIELD, 1);
     break;
 
     case 4:
-      lcd_print (p_motor_controller_data->ui8_pedal_cadence, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_pedal_cadence, ODOMETER_FIELD, 1);
     break;
 
     case 5:
-      lcd_print (p_motor_controller_data->ui8_pedal_human_power, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_pedal_human_power, ODOMETER_FIELD, 1);
     break;
 
     case 6:
-      lcd_print (p_motor_controller_data->ui8_duty_cycle, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_duty_cycle, ODOMETER_FIELD, 1);
     break;
 
     case 7:
-      lcd_print (p_motor_controller_data->ui16_motor_speed_erps, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui16_motor_speed_erps, ODOMETER_FIELD, 1);
     break;
 
     case 8:
-      lcd_print (p_motor_controller_data->ui8_foc_angle, ODOMETER_FIELD, 1);
+      lcd_print (motor_controller_data.ui8_foc_angle, ODOMETER_FIELD, 1);
     break;
 
 //    // pedal torque in Nm
@@ -527,6 +524,8 @@ void lcd_execute_menu_config_submenu_2 (void)
       ui8_lcd_menu_config_submenu_2_state = 0;
     break;
   }
+
+  lcd_print (ui8_lcd_menu_config_submenu_2_state, WHEEL_SPEED_FIELD, 1);
 }
 
 void lcd_execute_menu_config_power (void)
@@ -650,17 +649,17 @@ void temperature (void)
 void battery_soc (void)
 {
   static uint8_t ui8_timmer_counter;
-  static uint8_t ui8_battery_level;
+  static uint8_t ui8_battery_state;
 
   // update battery level value only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 10)
   {
     ui8_timmer_counter = 0;
-    ui8_battery_level = motor_controller_data.ui8_battery_level;
+    ui8_battery_state = motor_controller_data.ui8_battery_state;
   }
 
   // battery SOC
-  lcd_enable_battery_symbols (ui8_battery_level);
+  lcd_enable_battery_symbols (ui8_battery_state);
 }
 void power (void)
 {
@@ -1165,7 +1164,7 @@ void lcd_enable_ttm_symbol (uint8_t ui8_state)
     ui8_lcd_frame_buffer[17] &= ~32;
 }
 
-void lcd_enable_battery_symbols (uint8_t ui8_state)
+void lcd_enable_battery_symbols (uint8_t ui8_battery_state)
 {
 /*
   ui8_lcd_frame_buffer[23] |= 16;  // empty
@@ -1178,29 +1177,49 @@ void lcd_enable_battery_symbols (uint8_t ui8_state)
   // first clean battery symbols
   ui8_lcd_frame_buffer[23] &= ~241;
 
-  if (ui8_state <= 5)
-    ui8_lcd_frame_buffer[23] |= 16;
-  else if ((ui8_state > 5) && (ui8_state <= 10))
-    ui8_lcd_frame_buffer[23] |= 144;
-  else if ((ui8_state > 10) && (ui8_state <= 15))
-    ui8_lcd_frame_buffer[23] |= 145;
-  else if ((ui8_state > 15) && (ui8_state <= 20))
-    ui8_lcd_frame_buffer[23] |= 209;
-  else
-    ui8_lcd_frame_buffer[23] |= 241;
+  switch (motor_controller_data.ui8_battery_state)
+  {
+    case 0:
+    // empty, so flash the empty battery symbol
+    if (ui8_lcd_menu_flash_state)
+    {
+      ui8_lcd_frame_buffer[23] |= 16;
+    }
+    break;
+
+    case 1:
+      ui8_lcd_frame_buffer[23] |= 16;
+    break;
+
+    case 2:
+      ui8_lcd_frame_buffer[23] |= 144;
+    break;
+
+    case 3:
+      ui8_lcd_frame_buffer[23] |= 145;
+    break;
+
+    case 4:
+      ui8_lcd_frame_buffer[23] |= 209;
+    break;
+
+    case 5:
+      ui8_lcd_frame_buffer[23] |= 241;
+    break;
+  }
 }
 
 void low_pass_filter_battery_voltage_current_power (void)
 {
   // low pass filter battery voltage
-  ui32_battery_voltage_accumulated -= ui32_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT;
-  ui32_battery_voltage_accumulated += (uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000;
-  ui16_battery_voltage_filtered_x10 = ((uint32_t) (ui32_battery_voltage_accumulated >> READ_BATTERY_VOLTAGE_FILTER_COEFFICIENT)) / 1000;
+  ui32_battery_voltage_accumulated -= ui32_battery_voltage_accumulated >> BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+  ui32_battery_voltage_accumulated += (uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000;
+  ui16_battery_voltage_filtered_x10 = ((uint32_t) (ui32_battery_voltage_accumulated >> BATTERY_VOLTAGE_FILTER_COEFFICIENT)) / 1000;
 
   // low pass filter batery current
-  ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> READ_BATTERY_CURRENT_FILTER_COEFFICIENT;
+  ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> BATTERY_CURRENT_FILTER_COEFFICIENT;
   ui16_battery_current_accumulated += (uint16_t) motor_controller_data.ui8_battery_current;
-  ui16_battery_current_filtered_x5 = ui16_battery_current_accumulated >> READ_BATTERY_CURRENT_FILTER_COEFFICIENT;
+  ui16_battery_current_filtered_x5 = ui16_battery_current_accumulated >> BATTERY_CURRENT_FILTER_COEFFICIENT;
 
   // battery power
   ui16_battery_power_filtered_x50 = ui16_battery_current_filtered_x5 * ui16_battery_voltage_filtered_x10;
@@ -1309,7 +1328,7 @@ void lcd_init (void)
   lcd_update();
 
   // init variables with the stored value on EEPROM
-  eeprom_read_values_to_variables ();
+  eeprom_init_variables ();
 }
 
 void lcd_set_backlight_intensity (uint8_t ui8_intensity)

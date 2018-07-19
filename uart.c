@@ -15,7 +15,7 @@
 #include "lcd.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[18];
+volatile uint8_t ui8_rx_buffer[19];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[7];
 volatile uint8_t ui8_tx_counter = 0;
@@ -95,30 +95,32 @@ void clock_uart_data (void)
     // validation of the package data
     // last byte is the checksum
     ui8_checksum = 0;
-    for (ui8_i = 0; ui8_i <= 16; ui8_i++)
+    for (ui8_i = 0; ui8_i <= 17; ui8_i++)
     {
       ui8_checksum += ui8_rx_buffer[ui8_i];
     }
 
-    if (ui8_checksum && ui8_rx_buffer [17])
+    if (ui8_checksum && ui8_rx_buffer [18])
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
       p_configuration_variables = get_configuration_variables ();
 
-      p_motor_controller_data->ui8_battery_level = ui8_rx_buffer[1];
-      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[2];
-      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [4]) << 8) + ((uint16_t) ui8_rx_buffer [3]);
-      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[5];
-      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[6];
-      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[7];
-      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[8];
-      p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[9];
-      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[10];
-      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[11];
-      p_motor_controller_data->ui8_pedal_human_power = ui8_rx_buffer[12];
-      p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[13];
-      p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [15]) << 8) + ((uint16_t) ui8_rx_buffer [14]);
-      p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[16];
+      p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[1];
+      p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[2] & 0x30)) << 4;
+      p_motor_controller_data->ui8_battery_state = ui8_rx_buffer[2] & 0x0f;
+      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[3];
+      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 8) + ((uint16_t) ui8_rx_buffer [4]);
+      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[6];
+      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[8];
+      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[9];
+      p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[10];
+      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[11];
+      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12];
+      p_motor_controller_data->ui8_pedal_human_power = ui8_rx_buffer[13];
+      p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[14];
+      p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [16]) << 8) + ((uint16_t) ui8_rx_buffer [15]);
+      p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[17];
 
       // now send the data to the motor controller
       // start up byte

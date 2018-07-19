@@ -16,7 +16,9 @@
 //ui8_rx_buffer[2] == 4 if motor running
 typedef struct _motor_controller_data
 {
-  uint8_t ui8_battery_level;
+  uint16_t ui16_adc_battery_voltage;
+  uint8_t ui8_battery_state;
+  uint8_t ui8_battery_current;
   uint8_t ui8_motor_controller_state_1;
   uint8_t ui8_adc_throttle;
   uint8_t ui8_throttle;
@@ -26,7 +28,6 @@ typedef struct _motor_controller_data
   uint8_t ui8_duty_cycle;
   uint8_t ui8_error_code;
   uint16_t ui16_wheel_speed_x10;
-  uint8_t ui8_battery_current;
   uint8_t ui8_motor_controller_state_2;
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;

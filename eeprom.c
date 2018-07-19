@@ -14,12 +14,7 @@
 #include "lcd.h"
 
 static struct_configuration_variables *p_configuration_variables;
-
-void eeprom_write_array (uint8_t *array_values);
-
-void eeprom_init (void)
-{
-  uint8_t array_default_values [EEPROM_BYTES_STORED] = {
+static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     KEY,
     DEFAULT_VALUE_ASSIST_LEVEL,
     DEFAULT_VALUE_WHEEL_PERIMETER_0,
@@ -37,6 +32,12 @@ void eeprom_init (void)
     DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC,
     DEFAULT_VALUE_ODOMETER_FIELD_STATE,
   };
+
+void eeprom_write_array (uint8_t *array_values);
+void eeprom_read_values_to_variables (void);
+
+void eeprom_init (void)
+{
   uint8_t ui8_data;
 
   p_configuration_variables = get_configuration_variables ();
@@ -47,6 +48,28 @@ void eeprom_init (void)
   if (ui8_data != KEY) // verify if our key exist
   {
     eeprom_write_array (array_default_values);
+  }
+}
+
+void eeprom_init_variables (void)
+{
+  eeprom_read_values_to_variables ();
+
+  // now verify if any EEPROM saved value is out of valid range and if so,
+  // write correct ones and read again
+  if ((p_configuration_variables->ui8_assist_level > 5) ||
+      (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
+      (p_configuration_variables->ui16_wheel_perimeter < 750) ||
+      (p_configuration_variables->ui8_max_speed > 99) ||
+      (p_configuration_variables->ui8_units_type > 1) ||
+      (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
+      (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
+      (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
+      (p_configuration_variables->ui8_odometer_field_state > 4) ||
+      (p_configuration_variables->ui8_target_max_battery_power > 195))
+  {
+    eeprom_write_array (array_default_values);
+    eeprom_read_values_to_variables ();
   }
 }
 
@@ -87,6 +110,21 @@ void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_show_numeric_battery_soc = FLASH_ReadByte (ADDRESS_SHOW_NUMERIC_BATTERY_SOC);
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
   p_configuration_variables->ui8_target_max_battery_power = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
+
+  // now verify if any EEPROM saved value is out of valid range
+  if ((p_configuration_variables->ui8_assist_level > 5) ||
+      (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
+      (p_configuration_variables->ui16_wheel_perimeter < 750) ||
+      (p_configuration_variables->ui8_max_speed > 99) ||
+      (p_configuration_variables->ui8_units_type > 1) ||
+      (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
+      (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
+      (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
+      (p_configuration_variables->ui8_odometer_field_state > 4) ||
+      (p_configuration_variables->ui8_target_max_battery_power > 195))
+  {
+    eeprom_write_array (array_default_values);
+  }
 }
 
 void eeprom_write_variables_values (void)

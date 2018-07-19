@@ -34,7 +34,7 @@
 #define EEPROM_BYTES_STORED                   17
 
 void eeprom_init (void);
-void eeprom_read_values_to_variables (void);
+void eeprom_init_variables (void);
 void eeprom_write_variables_values (void);
 
 #endif /* _EEPROM_H_ */
