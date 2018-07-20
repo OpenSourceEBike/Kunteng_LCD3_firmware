@@ -24,11 +24,13 @@
 #define DEFAULT_VALUE_WHEEL_PERIMETER_0           2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
 #define DEFAULT_VALUE_WHEEL_PERIMETER_1           8
 #define DEFAULT_VALUE_MAX_SPEED                   50
-#define DEFAULT_VALUE_UNITS_TYPE                  1 // 1 = km/h
+#define DEFAULT_VALUE_UNITS_TYPE                  0 // 0 = km/h
 #define DEFAULT_VALUE_WH_OFFSET                   0
 #define DEFAULT_VALUE_HW_X10_100_PERCENT          0
 #define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC    0
 #define DEFAULT_VALUE_ODOMETER_FIELD_STATE        0
+#define DEFAULT_VALUE_BATTERY_MAX_CURRENT         16 // 16 amps
+#define DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER    75 // 750 watts
 // *************************************************************************** //
 
 // Torque sensor value found experimentaly

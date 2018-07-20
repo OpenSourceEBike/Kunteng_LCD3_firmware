@@ -31,6 +31,8 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_HW_X10_100_PERCENT,
     DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC,
     DEFAULT_VALUE_ODOMETER_FIELD_STATE,
+    DEFAULT_VALUE_BATTERY_MAX_CURRENT,
+    DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER
   };
 
 void eeprom_write_array (uint8_t *array_values);
@@ -66,6 +68,7 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
       (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
       (p_configuration_variables->ui8_odometer_field_state > 4) ||
+      (p_configuration_variables->ui8_battery_max_current > 100) ||
       (p_configuration_variables->ui8_target_max_battery_power > 195))
   {
     eeprom_write_array (array_default_values);
@@ -109,22 +112,8 @@ void eeprom_read_values_to_variables (void)
 
   p_configuration_variables->ui8_show_numeric_battery_soc = FLASH_ReadByte (ADDRESS_SHOW_NUMERIC_BATTERY_SOC);
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
+  p_configuration_variables->ui8_battery_max_current = FLASH_ReadByte (ADDRESS_BATTERY_MAX_CURRENT);
   p_configuration_variables->ui8_target_max_battery_power = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
-
-  // now verify if any EEPROM saved value is out of valid range
-  if ((p_configuration_variables->ui8_assist_level > 5) ||
-      (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
-      (p_configuration_variables->ui16_wheel_perimeter < 750) ||
-      (p_configuration_variables->ui8_max_speed > 99) ||
-      (p_configuration_variables->ui8_units_type > 1) ||
-      (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
-      (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
-      (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
-      (p_configuration_variables->ui8_odometer_field_state > 4) ||
-      (p_configuration_variables->ui8_target_max_battery_power > 195))
-  {
-    eeprom_write_array (array_default_values);
-  }
 }
 
 void eeprom_write_variables_values (void)
@@ -147,7 +136,8 @@ void eeprom_write_variables_values (void)
   array_values [13] = (p_configuration_variables->ui32_wh_x10_100_percent >> 24) & 255;
   array_values [14] = p_configuration_variables->ui8_show_numeric_battery_soc;
   array_values [15] = p_configuration_variables->ui8_odometer_field_state;
-  array_values [16] = p_configuration_variables->ui8_target_max_battery_power;
+  array_values [16] = p_configuration_variables->ui8_battery_max_current;
+  array_values [17] = p_configuration_variables->ui8_target_max_battery_power;
 
   eeprom_write_array (array_values);
 }

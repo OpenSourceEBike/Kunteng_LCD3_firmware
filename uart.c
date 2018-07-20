@@ -17,7 +17,7 @@
 volatile uint8_t ui8_received_package_flag = 0;
 volatile uint8_t ui8_rx_buffer[19];
 volatile uint8_t ui8_rx_counter = 0;
-volatile uint8_t ui8_tx_buffer[7];
+volatile uint8_t ui8_tx_buffer[8];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
@@ -108,7 +108,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[1];
       p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[2] & 0x30)) << 4;
       p_motor_controller_data->ui8_battery_state = ui8_rx_buffer[2] & 0x0f;
-      p_motor_controller_data->ui8_battery_current = ui8_rx_buffer[3];
+      p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[3];
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 8) + ((uint16_t) ui8_rx_buffer [4]);
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[6];
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[7];
@@ -135,25 +135,28 @@ void clock_uart_data (void)
       // walk assist level state
       if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
 
+      // battery max current in amps
+      ui8_tx_buffer[2] = p_configuration_variables->ui8_battery_max_current;
+
       // motor power in 10 watts unit
-      ui8_tx_buffer[2] = p_configuration_variables->ui8_target_max_battery_power;
+      ui8_tx_buffer[3] = p_configuration_variables->ui8_target_max_battery_power;
 
       // wheel perimeter
-      ui8_tx_buffer[3] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
-      ui8_tx_buffer[4] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
+      ui8_tx_buffer[4] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
+      ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
 
       // target max wheel speed
-      ui8_tx_buffer[5] = p_configuration_variables->ui8_max_speed;
+      ui8_tx_buffer[6] = p_configuration_variables->ui8_max_speed;
 
       ui8_checksum = 0;
-      for (ui8_i = 0; ui8_i <= 5; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 6; ui8_i++)
       {
         ui8_checksum += ui8_tx_buffer[ui8_i];
       }
-      ui8_tx_buffer[6] = ui8_checksum;
+      ui8_tx_buffer[7] = ui8_checksum;
 
       // send the full package to UART
-      for (ui8_i = 0; ui8_i <= 6; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 7; ui8_i++)
       {
         putchar (ui8_tx_buffer[ui8_i]);
       }

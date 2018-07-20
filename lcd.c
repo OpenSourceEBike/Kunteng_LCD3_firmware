@@ -21,7 +21,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 3
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 4
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -60,10 +60,10 @@ uint8_t ui8_lcd_digit_mask_inverted[] = {
     NUMBER_9_MASK_INVERTED
 };
 
-static uint32_t ui32_battery_voltage_accumulated = 0;
+static uint32_t ui32_battery_voltage_accumulated_x10000 = 0;
 static uint16_t ui16_battery_voltage_filtered_x10;
 
-static uint16_t ui16_battery_current_accumulated = 0;
+static uint16_t ui16_battery_current_accumulated_x5 = 0;
 static uint16_t ui16_battery_current_filtered_x5;
 
 static uint16_t ui16_battery_power_accumulated = 0;
@@ -89,6 +89,7 @@ static uint8_t ui8_lcd_menu = 0;
 static uint8_t ui8_lcd_menu_config_submenu_0_state = 0;
 static uint8_t ui8_lcd_menu_config_submenu_1_state = 0;
 static uint8_t ui8_lcd_menu_config_submenu_2_state = 0;
+static uint8_t ui8_lcd_menu_config_submenu_3_state = 0;
 static uint8_t ui8_lcd_menu_flash_counter = 0;
 static uint8_t ui8_lcd_menu_flash_state;
 static uint8_t ui8_lcd_menu_config_submenu_number = 0;
@@ -124,7 +125,7 @@ void lcd_execute_menu_config (void);
 void lcd_execute_menu_config_power (void);
 void lcd_execute_menu_config_submenu_0 (void);
 void lcd_execute_menu_config_submenu_1 (void);
-void lcd_execute_menu_config_submenu_2 (void);
+void lcd_execute_menu_config_submenu_3 (void);
 void update_menu_flashing_state (void);
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number);
 
@@ -243,6 +244,10 @@ void lcd_execute_menu_config (void)
         lcd_execute_menu_config_submenu_2 ();
       break;
 
+      case 3:
+        lcd_execute_menu_config_submenu_3 ();
+      break;
+
       default:
         ui8_lcd_menu_config_submenu_number = 0;
       break;
@@ -257,6 +262,7 @@ void lcd_execute_menu_config (void)
       ui8_lcd_menu_config_submenu_0_state = 0;
       ui8_lcd_menu_config_submenu_1_state = 0;
       ui8_lcd_menu_config_submenu_2_state = 0;
+      ui8_lcd_menu_config_submenu_3_state = 0;
     }
   }
 }
@@ -468,9 +474,46 @@ void lcd_execute_menu_config_submenu_1 (void)
 
 void lcd_execute_menu_config_submenu_2 (void)
 {
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_2_state, 9);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_2_state, 1);
 
   switch (ui8_lcd_menu_config_submenu_2_state)
+  {
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+
+        configuration_variables.ui8_battery_max_current++;
+        if (configuration_variables.ui8_battery_max_current > 100) { configuration_variables.ui8_battery_max_current = 100; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+
+        if (configuration_variables.ui8_battery_max_current > 0)
+          configuration_variables.ui8_battery_max_current--;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_battery_max_current, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    default:
+      ui8_lcd_menu_config_submenu_2_state = 0;
+    break;
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_2_state, WHEEL_SPEED_FIELD, 1);
+}
+
+void lcd_execute_menu_config_submenu_3 (void)
+{
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_3_state, 9);
+
+  switch (ui8_lcd_menu_config_submenu_3_state)
   {
     case 0:
       lcd_print (motor_controller_data.ui8_adc_throttle, ODOMETER_FIELD, 1);
@@ -521,11 +564,11 @@ void lcd_execute_menu_config_submenu_2 (void)
 //    break;
 
     default:
-      ui8_lcd_menu_config_submenu_2_state = 0;
+      ui8_lcd_menu_config_submenu_3_state = 0;
     break;
   }
 
-  lcd_print (ui8_lcd_menu_config_submenu_2_state, WHEEL_SPEED_FIELD, 1);
+  lcd_print (ui8_lcd_menu_config_submenu_3_state, WHEEL_SPEED_FIELD, 1);
 }
 
 void lcd_execute_menu_config_power (void)
@@ -549,7 +592,7 @@ void lcd_execute_menu_config_power (void)
 
     configuration_variables.ui8_target_max_battery_power += 5;
     // the BATTERY_POWER_FIELD can't show higher value
-    if (configuration_variables.ui8_target_max_battery_power < 195) { configuration_variables.ui8_target_max_battery_power = 195; }
+    if (configuration_variables.ui8_target_max_battery_power > 195) { configuration_variables.ui8_target_max_battery_power = 195; }
   }
 
   if (get_button_down_click_event ())
@@ -1212,14 +1255,14 @@ void lcd_enable_battery_symbols (uint8_t ui8_battery_state)
 void low_pass_filter_battery_voltage_current_power (void)
 {
   // low pass filter battery voltage
-  ui32_battery_voltage_accumulated -= ui32_battery_voltage_accumulated >> BATTERY_VOLTAGE_FILTER_COEFFICIENT;
-  ui32_battery_voltage_accumulated += (uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000;
-  ui16_battery_voltage_filtered_x10 = ((uint32_t) (ui32_battery_voltage_accumulated >> BATTERY_VOLTAGE_FILTER_COEFFICIENT)) / 1000;
+  ui32_battery_voltage_accumulated_x10000 -= ui32_battery_voltage_accumulated_x10000 >> BATTERY_VOLTAGE_FILTER_COEFFICIENT;
+  ui32_battery_voltage_accumulated_x10000 += (uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000;
+  ui16_battery_voltage_filtered_x10 = ((uint32_t) (ui32_battery_voltage_accumulated_x10000 >> BATTERY_VOLTAGE_FILTER_COEFFICIENT)) / 1000;
 
   // low pass filter batery current
-  ui16_battery_current_accumulated -= ui16_battery_current_accumulated >> BATTERY_CURRENT_FILTER_COEFFICIENT;
-  ui16_battery_current_accumulated += (uint16_t) motor_controller_data.ui8_battery_current;
-  ui16_battery_current_filtered_x5 = ui16_battery_current_accumulated >> BATTERY_CURRENT_FILTER_COEFFICIENT;
+  ui16_battery_current_accumulated_x5 -= ui16_battery_current_accumulated_x5 >> BATTERY_CURRENT_FILTER_COEFFICIENT;
+  ui16_battery_current_accumulated_x5 += (uint16_t) motor_controller_data.ui8_battery_current_x5;
+  ui16_battery_current_filtered_x5 = ui16_battery_current_accumulated_x5 >> BATTERY_CURRENT_FILTER_COEFFICIENT;
 
   // battery power
   ui16_battery_power_filtered_x50 = ui16_battery_current_filtered_x5 * ui16_battery_voltage_filtered_x10;
