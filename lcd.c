@@ -458,8 +458,14 @@ void lcd_execute_menu_config_submenu_1 (void)
       {
         button_clear_events ();
 
-        configuration_variables.ui32_wh_x10_offset -= 100;
-        if (configuration_variables.ui32_wh_x10_offset < 100) { configuration_variables.ui32_wh_x10_offset = 0; }
+        if (configuration_variables.ui32_wh_x10_offset > 100)
+        {
+          configuration_variables.ui32_wh_x10_offset -= 100;
+        }
+        else if (configuration_variables.ui32_wh_x10_offset > 0)
+        {
+          configuration_variables.ui32_wh_x10_offset = 0;
+        }
       }
 
       if (ui8_lcd_menu_flash_state)
@@ -628,7 +634,7 @@ uint8_t first_time_management (void)
     while (ui16_adc_read_battery_voltage_10b () == 0) ;
 
     // reset Wh value if battery is over 54.4V (when battery is near fully charged)
-    if (((uint32_t) ui16_adc_read_battery_voltage_10b () * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
+    if (((uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
     {
       configuration_variables.ui32_wh_x10_offset = 0;
     }
