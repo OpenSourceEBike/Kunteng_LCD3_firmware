@@ -13,14 +13,16 @@
 #include "stm8s_uart2.h"
 #include "main.h"
 #include "lcd.h"
+#include "utils.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[19];
+volatile uint8_t ui8_rx_buffer[20];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[8];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
+static uint16_t ui16_crc_rx;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 volatile uint8_t ui8_uart_received_first_package = 0;
@@ -94,13 +96,13 @@ void clock_uart_data (void)
   {
     // validation of the package data
     // last byte is the checksum
-    ui8_checksum = 0;
+    ui16_crc_rx = 0xffff;
     for (ui8_i = 0; ui8_i <= 17; ui8_i++)
     {
-      ui8_checksum += ui8_rx_buffer[ui8_i];
+      crc16 (ui8_rx_buffer[ui8_i], &ui16_crc_rx);
     }
 
-    if (ui8_checksum && ui8_rx_buffer [18])
+    if (((((uint16_t) ui8_rx_buffer [19]) << 8) + ((uint16_t) ui8_rx_buffer [18])) == ui16_crc_rx)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
       p_configuration_variables = get_configuration_variables ();
@@ -164,7 +166,10 @@ void clock_uart_data (void)
       // signal that we processed the full package
       ui8_received_package_flag = 0;
 
-      ui8_uart_received_first_package = 1;
+      // let's wait for 10 packages, seems that first ADC battery voltage is an incorrect value
+      ui8_uart_received_first_package++;
+      if (ui8_uart_received_first_package > 10)
+        ui8_uart_received_first_package = 10;
     }
 
     // enable UART2 receive interrupt as we are now ready to receive a new package
@@ -174,7 +179,7 @@ void clock_uart_data (void)
 
 uint8_t uart_received_first_package (void)
 {
-  return ui8_uart_received_first_package;
+  return (ui8_uart_received_first_package == 10) ? 1: 0;
 }
 
 #if __SDCC_REVISION < 9624

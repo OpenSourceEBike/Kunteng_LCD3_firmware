@@ -630,9 +630,6 @@ uint8_t first_time_management (void)
   {
     ui8_motor_controller_init = 0;
 
-    // wait for a first good read value of ADC: voltage can't be 0
-    while (ui16_adc_read_battery_voltage_10b () == 0) ;
-
     // reset Wh value if battery is over 54.4V (when battery is near fully charged)
     if (((uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
     {
