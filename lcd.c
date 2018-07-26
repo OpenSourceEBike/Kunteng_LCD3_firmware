@@ -125,6 +125,7 @@ void lcd_execute_menu_config (void);
 void lcd_execute_menu_config_power (void);
 void lcd_execute_menu_config_submenu_0 (void);
 void lcd_execute_menu_config_submenu_1 (void);
+void lcd_execute_menu_config_submenu_2 (void);
 void lcd_execute_menu_config_submenu_3 (void);
 void update_menu_flashing_state (void);
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number);
@@ -359,11 +360,89 @@ void lcd_execute_menu_config_submenu_0 (void)
 
 void lcd_execute_menu_config_submenu_1 (void)
 {
-  uint8_t ui8_temp;
-
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_1_state, 4);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_1_state, 3);
 
   switch (ui8_lcd_menu_config_submenu_1_state)
+  {
+    // battery cells number
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_battery_cells_number < 15) { configuration_variables.ui8_battery_cells_number++; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_battery_cells_number > 7) { configuration_variables.ui8_battery_cells_number--; }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_battery_cells_number, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // battery max current
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+
+        configuration_variables.ui8_battery_max_current++;
+        if (configuration_variables.ui8_battery_max_current > 100) { configuration_variables.ui8_battery_max_current = 100; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+
+        if (configuration_variables.ui8_battery_max_current > 0)
+          configuration_variables.ui8_battery_max_current--;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_battery_max_current, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // battery low voltage cut-off
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui16_battery_low_voltage_cut_off_x10 < 630) { configuration_variables.ui16_battery_low_voltage_cut_off_x10++; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui16_battery_low_voltage_cut_off_x10 > 161) { configuration_variables.ui16_battery_low_voltage_cut_off_x10--; }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui16_battery_low_voltage_cut_off_x10, ODOMETER_FIELD, 0);
+      }
+    break;
+
+    default:
+      ui8_lcd_menu_config_submenu_1_state = 0;
+    break;
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_1_state, WHEEL_SPEED_FIELD, 1);
+}
+
+void lcd_execute_menu_config_submenu_2 (void)
+{
+  uint8_t ui8_temp;
+
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_2_state, 4);
+
+  switch (ui8_lcd_menu_config_submenu_2_state)
   {
     // menu to enable/disable show of numeric watts hour value
     case 0:
@@ -473,39 +552,6 @@ void lcd_execute_menu_config_submenu_1 (void)
         lcd_print (configuration_variables.ui32_wh_x10_offset, ODOMETER_FIELD, 0);
       }
     break;
-  }
-
-  lcd_print (ui8_lcd_menu_config_submenu_1_state, WHEEL_SPEED_FIELD, 1);
-}
-
-void lcd_execute_menu_config_submenu_2 (void)
-{
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_2_state, 1);
-
-  switch (ui8_lcd_menu_config_submenu_2_state)
-  {
-    case 0:
-      if (get_button_up_click_event ())
-      {
-        clear_button_up_click_event ();
-
-        configuration_variables.ui8_battery_max_current++;
-        if (configuration_variables.ui8_battery_max_current > 100) { configuration_variables.ui8_battery_max_current = 100; }
-      }
-
-      if (get_button_down_click_event ())
-      {
-        clear_button_down_click_event ();
-
-        if (configuration_variables.ui8_battery_max_current > 0)
-          configuration_variables.ui8_battery_max_current--;
-      }
-
-      if (ui8_lcd_menu_flash_state)
-      {
-        lcd_print (configuration_variables.ui8_battery_max_current, ODOMETER_FIELD, 1);
-      }
-    break;
 
     default:
       ui8_lcd_menu_config_submenu_2_state = 0;
@@ -596,22 +642,22 @@ void lcd_execute_menu_config_power (void)
   {
     button_clear_events ();
 
-    configuration_variables.ui8_target_max_battery_power += 5;
+    configuration_variables.ui8_target_max_battery_power_div10 += 5;
     // the BATTERY_POWER_FIELD can't show higher value
-    if (configuration_variables.ui8_target_max_battery_power > 195) { configuration_variables.ui8_target_max_battery_power = 195; }
+    if (configuration_variables.ui8_target_max_battery_power_div10 > 195) { configuration_variables.ui8_target_max_battery_power_div10 = 195; }
   }
 
   if (get_button_down_click_event ())
   {
     button_clear_events ();
 
-    configuration_variables.ui8_target_max_battery_power -= 5;
-    if (configuration_variables.ui8_target_max_battery_power < 5) { configuration_variables.ui8_target_max_battery_power = 0; }
+    configuration_variables.ui8_target_max_battery_power_div10 -= 5;
+    if (configuration_variables.ui8_target_max_battery_power_div10 < 5) { configuration_variables.ui8_target_max_battery_power_div10 = 0; }
   }
 
   if (ui8_lcd_menu_flash_state)
   {
-    lcd_print (configuration_variables.ui8_target_max_battery_power * 10, BATTERY_POWER_FIELD, 0);
+    lcd_print (configuration_variables.ui8_target_max_battery_power_div10 * 10, BATTERY_POWER_FIELD, 0);
   }
 }
 
@@ -695,18 +741,70 @@ void temperature (void)
 void battery_soc (void)
 {
   static uint8_t ui8_timmer_counter;
-  static uint8_t ui8_battery_state;
+  static uint8_t ui8_battery_state_of_charge;
+  uint16_t ui16_battery_volts_x256;
+  uint16_t ui16_battery_cells_number_x256;
 
   // update battery level value only at every 100ms / 10 times per second and this helps to visual filter the fast changing values
   if (ui8_timmer_counter++ >= 10)
   {
     ui8_timmer_counter = 0;
-    ui8_battery_state = motor_controller_data.ui8_battery_state;
+
+    // calc battery pack state of charge (SOC)
+    ui16_battery_volts_x256 = motor_controller_data.ui16_adc_battery_voltage * ((uint16_t) ADC10BITS_BATTERY_VOLTAGE_PER_ADC_STEP_X256);
+    ui16_battery_cells_number_x256 = ((uint16_t) configuration_variables.ui8_battery_cells_number) << 8;
+
+    if (ui16_battery_volts_x256 > ((uint16_t) ((float) ui16_battery_cells_number_x256 * LI_ION_CELL_VOLTS_80))) { ui8_battery_state_of_charge = 5; } // 4 bars | full
+    else if (ui16_battery_volts_x256 > ((uint16_t) ((float) ui16_battery_cells_number_x256 * LI_ION_CELL_VOLTS_60))) { ui8_battery_state_of_charge = 4; } // 3 bars
+    else if (ui16_battery_volts_x256 > ((uint16_t) ((float) ui16_battery_cells_number_x256 * LI_ION_CELL_VOLTS_40))) { ui8_battery_state_of_charge = 3; } // 2 bars
+    else if (ui16_battery_volts_x256 > ((uint16_t) ((float) ui16_battery_cells_number_x256 * LI_ION_CELL_VOLTS_20))) { ui8_battery_state_of_charge = 2; } // 1 bar
+    else if (ui16_battery_volts_x256 > ((uint16_t) ((float) ui16_battery_cells_number_x256 * LI_ION_CELL_VOLTS_10))) { ui8_battery_state_of_charge = 1; } // empty
+    else { ui8_battery_state_of_charge = 0; } // flashing
   }
 
-  // battery SOC
-  lcd_enable_battery_symbols (ui8_battery_state);
+  /*
+    ui8_lcd_frame_buffer[23] |= 16;  // empty
+    ui8_lcd_frame_buffer[23] |= 128; // bar number 1
+    ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
+    ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
+    ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
+    */
+
+  // first clean battery symbols
+  ui8_lcd_frame_buffer[23] &= ~241;
+
+  switch (ui8_battery_state_of_charge)
+  {
+    case 0:
+    // empty, so flash the empty battery symbol
+    if (ui8_lcd_menu_flash_state)
+    {
+      ui8_lcd_frame_buffer[23] |= 16;
+    }
+    break;
+
+    case 1:
+      ui8_lcd_frame_buffer[23] |= 16;
+    break;
+
+    case 2:
+      ui8_lcd_frame_buffer[23] |= 144;
+    break;
+
+    case 3:
+      ui8_lcd_frame_buffer[23] |= 145;
+    break;
+
+    case 4:
+      ui8_lcd_frame_buffer[23] |= 209;
+    break;
+
+    case 5:
+      ui8_lcd_frame_buffer[23] |= 241;
+    break;
+  }
 }
+
 void power (void)
 {
   lcd_print (ui16_battery_power_filtered, BATTERY_POWER_FIELD, 0);
@@ -1210,51 +1308,6 @@ void lcd_enable_ttm_symbol (uint8_t ui8_state)
     ui8_lcd_frame_buffer[17] &= ~32;
 }
 
-void lcd_enable_battery_symbols (uint8_t ui8_battery_state)
-{
-/*
-  ui8_lcd_frame_buffer[23] |= 16;  // empty
-  ui8_lcd_frame_buffer[23] |= 128; // bar number 1
-  ui8_lcd_frame_buffer[23] |= 1;   // bar number 2
-  ui8_lcd_frame_buffer[23] |= 64;  // bar number 3
-  ui8_lcd_frame_buffer[23] |= 32;  // bar number 4
-  */
-
-  // first clean battery symbols
-  ui8_lcd_frame_buffer[23] &= ~241;
-
-  switch (motor_controller_data.ui8_battery_state)
-  {
-    case 0:
-    // empty, so flash the empty battery symbol
-    if (ui8_lcd_menu_flash_state)
-    {
-      ui8_lcd_frame_buffer[23] |= 16;
-    }
-    break;
-
-    case 1:
-      ui8_lcd_frame_buffer[23] |= 16;
-    break;
-
-    case 2:
-      ui8_lcd_frame_buffer[23] |= 144;
-    break;
-
-    case 3:
-      ui8_lcd_frame_buffer[23] |= 145;
-    break;
-
-    case 4:
-      ui8_lcd_frame_buffer[23] |= 209;
-    break;
-
-    case 5:
-      ui8_lcd_frame_buffer[23] |= 241;
-    break;
-  }
-}
-
 void low_pass_filter_battery_voltage_current_power (void)
 {
   // low pass filter battery voltage
@@ -1379,7 +1432,7 @@ void lcd_init (void)
 
 void lcd_set_backlight_intensity (uint8_t ui8_intensity)
 {
-  if ((ui8_intensity >= 0) && (ui8_intensity <= 9))
+  if (ui8_intensity <= 9)
   {
     TIM1_SetCompare4 (ui8_intensity); // set background light
   }

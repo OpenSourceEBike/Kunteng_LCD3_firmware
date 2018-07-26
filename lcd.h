@@ -17,7 +17,6 @@
 typedef struct _motor_controller_data
 {
   uint16_t ui16_adc_battery_voltage;
-  uint8_t ui8_battery_state;
   uint8_t ui8_battery_current_x5;
   uint8_t ui8_motor_controller_state_1;
   uint8_t ui8_adc_throttle;
@@ -46,8 +45,10 @@ typedef struct _configuration_variables
   uint32_t ui32_wh_x10_100_percent;
   uint8_t ui8_show_numeric_battery_soc;
   uint8_t ui8_odometer_field_state;
+  uint8_t ui8_target_max_battery_power_div10;
+  uint8_t ui8_battery_cells_number;
   uint8_t ui8_battery_max_current;
-  uint8_t ui8_target_max_battery_power;
+  uint16_t ui16_battery_low_voltage_cut_off_x10;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

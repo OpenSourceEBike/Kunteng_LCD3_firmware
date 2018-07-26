@@ -18,11 +18,12 @@
 volatile uint8_t ui8_received_package_flag = 0;
 volatile uint8_t ui8_rx_buffer[20];
 volatile uint8_t ui8_rx_counter = 0;
-volatile uint8_t ui8_tx_buffer[8];
+volatile uint8_t ui8_tx_buffer[11];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
 static uint16_t ui16_crc_rx;
+static uint16_t ui16_crc_tx;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 volatile uint8_t ui8_uart_received_first_package = 0;
@@ -109,7 +110,6 @@ void clock_uart_data (void)
 
       p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[1];
       p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[2] & 0x30)) << 4;
-      p_motor_controller_data->ui8_battery_state = ui8_rx_buffer[2] & 0x0f;
       p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[3];
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 8) + ((uint16_t) ui8_rx_buffer [4]);
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[6];
@@ -124,6 +124,9 @@ void clock_uart_data (void)
       p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [16]) << 8) + ((uint16_t) ui8_rx_buffer [15]);
       p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[17];
 
+      // signal that we processed the full package
+      ui8_received_package_flag = 0;
+
       // now send the data to the motor controller
       // start up byte
       ui8_tx_buffer[0] = 0x59;
@@ -137,34 +140,37 @@ void clock_uart_data (void)
       // walk assist level state
       if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
 
+      // battery low voltage cut-off
+      ui8_tx_buffer[2] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 0xff);
+      ui8_tx_buffer[3] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8);
+
       // battery max current in amps
-      ui8_tx_buffer[2] = p_configuration_variables->ui8_battery_max_current;
+      ui8_tx_buffer[4] = p_configuration_variables->ui8_battery_max_current;
 
       // motor power in 10 watts unit
-      ui8_tx_buffer[3] = p_configuration_variables->ui8_target_max_battery_power;
+      ui8_tx_buffer[5] = p_configuration_variables->ui8_target_max_battery_power_div10;
 
       // wheel perimeter
-      ui8_tx_buffer[4] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
-      ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
+      ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
+      ui8_tx_buffer[7] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
 
       // target max wheel speed
-      ui8_tx_buffer[6] = p_configuration_variables->ui8_max_speed;
+      ui8_tx_buffer[8] = p_configuration_variables->ui8_max_speed;
 
-      ui8_checksum = 0;
-      for (ui8_i = 0; ui8_i <= 6; ui8_i++)
+      // prepare crc of the package
+      ui16_crc_tx = 0xffff;
+      for (ui8_i = 0; ui8_i <= 8; ui8_i++)
       {
-        ui8_checksum += ui8_tx_buffer[ui8_i];
+        crc16 (ui8_tx_buffer[ui8_i], &ui16_crc_tx);
       }
-      ui8_tx_buffer[7] = ui8_checksum;
+      ui8_tx_buffer[9] = (uint8_t) (ui16_crc_tx & 0xff);
+      ui8_tx_buffer[10] = (uint8_t) (ui16_crc_tx >> 8) & 0xff;
 
       // send the full package to UART
-      for (ui8_i = 0; ui8_i <= 7; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 10; ui8_i++)
       {
         putchar (ui8_tx_buffer[ui8_i]);
       }
-
-      // signal that we processed the full package
-      ui8_received_package_flag = 0;
 
       // let's wait for 10 packages, seems that first ADC battery voltage is an incorrect value
       ui8_uart_received_first_package++;

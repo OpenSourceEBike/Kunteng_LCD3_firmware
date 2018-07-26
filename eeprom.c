@@ -32,7 +32,10 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC,
     DEFAULT_VALUE_ODOMETER_FIELD_STATE,
     DEFAULT_VALUE_BATTERY_MAX_CURRENT,
-    DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER
+    DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER,
+    DEFAULT_VALUE_BATTERY_CELLS_NUMBER,
+    DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0,
+    DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1
   };
 
 void eeprom_write_array (uint8_t *array_values);
@@ -69,7 +72,11 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
       (p_configuration_variables->ui8_odometer_field_state > 4) ||
       (p_configuration_variables->ui8_battery_max_current > 100) ||
-      (p_configuration_variables->ui8_target_max_battery_power > 195))
+      (p_configuration_variables->ui8_target_max_battery_power_div10 > 195) ||
+      (p_configuration_variables->ui8_battery_cells_number > 15) ||
+      (p_configuration_variables->ui8_battery_cells_number < 6) ||
+      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
+      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160))
   {
     eeprom_write_array (array_default_values);
     eeprom_read_values_to_variables ();
@@ -113,7 +120,12 @@ void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_show_numeric_battery_soc = FLASH_ReadByte (ADDRESS_SHOW_NUMERIC_BATTERY_SOC);
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
   p_configuration_variables->ui8_battery_max_current = FLASH_ReadByte (ADDRESS_BATTERY_MAX_CURRENT);
-  p_configuration_variables->ui8_target_max_battery_power = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
+  p_configuration_variables->ui8_target_max_battery_power_div10 = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
+  p_configuration_variables->ui8_battery_cells_number = FLASH_ReadByte (ADDRESS_BATTERY_CELLS_NUMBER);
+  ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1);
+  ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+  p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 = ui16_temp;
 }
 
 void eeprom_write_variables_values (void)
@@ -137,7 +149,10 @@ void eeprom_write_variables_values (void)
   array_values [14] = p_configuration_variables->ui8_show_numeric_battery_soc;
   array_values [15] = p_configuration_variables->ui8_odometer_field_state;
   array_values [16] = p_configuration_variables->ui8_battery_max_current;
-  array_values [17] = p_configuration_variables->ui8_target_max_battery_power;
+  array_values [17] = p_configuration_variables->ui8_target_max_battery_power_div10;
+  array_values [18] = p_configuration_variables->ui8_battery_cells_number;
+  array_values [19] = p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 255;
+  array_values [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
 
   eeprom_write_array (array_values);
 }

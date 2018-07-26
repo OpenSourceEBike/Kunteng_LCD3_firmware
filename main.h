@@ -20,17 +20,21 @@
 
 // *************************************************************************** //
 // EEPROM memory variables default values
-#define DEFAULT_VALUE_ASSIST_LEVEL                2
-#define DEFAULT_VALUE_WHEEL_PERIMETER_0           2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
-#define DEFAULT_VALUE_WHEEL_PERIMETER_1           8
-#define DEFAULT_VALUE_MAX_SPEED                   50
-#define DEFAULT_VALUE_UNITS_TYPE                  0 // 0 = km/h
-#define DEFAULT_VALUE_WH_OFFSET                   0
-#define DEFAULT_VALUE_HW_X10_100_PERCENT          0
-#define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC    0
-#define DEFAULT_VALUE_ODOMETER_FIELD_STATE        0
-#define DEFAULT_VALUE_BATTERY_MAX_CURRENT         16 // 16 amps
-#define DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER    75 // 750 watts
+#define DEFAULT_VALUE_ASSIST_LEVEL                      2
+#define DEFAULT_VALUE_WHEEL_PERIMETER_0                 2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
+#define DEFAULT_VALUE_WHEEL_PERIMETER_1                 8
+#define DEFAULT_VALUE_MAX_SPEED                         50
+#define DEFAULT_VALUE_UNITS_TYPE                        0 // 0 = km/h
+#define DEFAULT_VALUE_WH_OFFSET                         0
+#define DEFAULT_VALUE_HW_X10_100_PERCENT                0
+#define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC          0
+#define DEFAULT_VALUE_ODOMETER_FIELD_STATE              0
+#define DEFAULT_VALUE_BATTERY_MAX_CURRENT               18 // 18 amps
+#define DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER          75 // 750 watts
+#define DEFAULT_VALUE_BATTERY_CELLS_NUMBER              13 // 13 --> 48V
+#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0 134 // 48v battery, LVC = 39.0 (3.0 * 13): (134 + (1 << 8))
+#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1 1
+
 // *************************************************************************** //
 
 // Torque sensor value found experimentaly
@@ -38,5 +42,19 @@
 // using the scale, was found that each 1kg was measured as 3 torque sensor units
 // Force (Nm) = Kg * 9.18 * 0.17 (arm cranks size)
 #define TORQUE_SENSOR_FORCE_SCALE_X1000 556
+
+// *************************************************************************** //
+// BATTERY
+
+// ADC Battery voltage
+// 0.344 per ADC_8bits step: 17.9V --> ADC_8bits = 52; 40V --> ADC_8bits = 116; this signal atenuated by the opamp 358
+#define ADC10BITS_BATTERY_VOLTAGE_PER_ADC_STEP_X512 44
+#define ADC10BITS_BATTERY_VOLTAGE_PER_ADC_STEP_X256 (ADC10BITS_BATTERY_VOLTAGE_PER_ADC_STEP_X512 >> 1)
+#define ADC8BITS_BATTERY_VOLTAGE_PER_ADC_STEP 0.344
+
+// ADC Battery current
+// 1A per 5 steps of ADC_10bits
+#define ADC_BATTERY_CURRENT_PER_ADC_STEP_X512 102
+// *************************************************************************** //
 
 #endif // _MAIN_H_

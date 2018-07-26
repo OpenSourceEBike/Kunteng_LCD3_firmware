@@ -9,13 +9,18 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-// 13S5P, each cell 2.5Ah; P wh = 48 * (5 * 2.5) = 600; consider 550 for some losses inside battery resistance
-#define BATTERY_SIZE_WH 550
-
 
 // Battery voltage (readed on LCD3):
 // 30.0V --> 447 | 0.0671 volts per each ADC unit
 // 40.0V --> 595 | 0.0672 volts per each ADC unit
+
+#define LI_ION_CELL_VOLTS_100   4.06
+#define LI_ION_CELL_VOLTS_80    3.93
+#define LI_ION_CELL_VOLTS_60    3.78
+#define LI_ION_CELL_VOLTS_40    3.60
+#define LI_ION_CELL_VOLTS_20    3.38
+#define LI_ION_CELL_VOLTS_10    3.25
+#define LI_ION_CELL_VOLTS_0     3.00
 
 // Battery voltage (readed on motor controller):
 #define ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000 863
