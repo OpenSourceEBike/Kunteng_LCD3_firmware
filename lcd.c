@@ -676,8 +676,9 @@ uint8_t first_time_management (void)
   {
     ui8_motor_controller_init = 0;
 
-    // reset Wh value if battery is over 54.4V (when battery is near fully charged)
-    if (((uint32_t) motor_controller_data.ui16_adc_battery_voltage * ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > 544000)
+    // reset Wh value if battery is over battery_cells * 4.1V (when battery is near fully charged)
+    if (((uint32_t) motor_controller_data.ui16_adc_battery_voltage *
+        ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > ((uint32_t) configuration_variables.ui8_battery_cells_number * 41000))
     {
       configuration_variables.ui32_wh_x10_offset = 0;
     }
