@@ -39,7 +39,7 @@ typedef struct _configuration_variables
 {
   uint8_t ui8_assist_level;
   uint16_t ui16_wheel_perimeter;
-  uint8_t ui8_max_speed;
+  uint8_t ui8_wheel_max_speed;
   uint8_t ui8_units_type;
   uint32_t ui32_wh_x10_offset;
   uint32_t ui32_wh_x10_100_percent;
@@ -49,6 +49,10 @@ typedef struct _configuration_variables
   uint8_t ui8_battery_cells_number;
   uint8_t ui8_battery_max_current;
   uint16_t ui16_battery_low_voltage_cut_off_x10;
+  uint8_t ui8_motor_voltage_type;
+  uint8_t ui8_motor_assistance_startup_config;
+  uint8_t ui8_pas_max_cadence;
+  uint8_t ui8_cruise_control;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

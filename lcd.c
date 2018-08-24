@@ -204,7 +204,7 @@ void lcd_execute_menu_config (void)
       ui8_lcd_menu = 0;
 
       // save the updated variables on EEPROM
-      eeprom_write_variables_values ();
+      eeprom_write_variables ();
 
       return;
     }
@@ -281,23 +281,23 @@ void lcd_execute_menu_config_submenu_0 (void)
       {
         clear_button_up_click_event ();
 
-        configuration_variables.ui8_max_speed++;
-        if (configuration_variables.ui8_max_speed >= 99) { configuration_variables.ui8_max_speed = 99; }
+        configuration_variables.ui8_wheel_max_speed++;
+        if (configuration_variables.ui8_wheel_max_speed >= 99) { configuration_variables.ui8_wheel_max_speed = 99; }
       }
 
       if (get_button_down_click_event ())
       {
         clear_button_down_click_event ();
 
-        configuration_variables.ui8_max_speed--;
-        if (configuration_variables.ui8_max_speed < 1)  { configuration_variables.ui8_max_speed = 1; }
+        configuration_variables.ui8_wheel_max_speed--;
+        if (configuration_variables.ui8_wheel_max_speed < 1)  { configuration_variables.ui8_wheel_max_speed = 1; }
 
       }
 
       // print wheel speed only half of the time
       if (ui8_lcd_menu_flash_state)
       {
-        lcd_print (configuration_variables.ui8_max_speed * 10, WHEEL_SPEED_FIELD, 0);
+        lcd_print (configuration_variables.ui8_wheel_max_speed * 10, WHEEL_SPEED_FIELD, 0);
       }
 
       lcd_enable_kmh_symbol (1);
@@ -635,7 +635,7 @@ void lcd_execute_menu_config_power (void)
     ui8_lcd_menu = 0;
 
     // save the updated variables on EEPROM
-    eeprom_write_variables_values ();
+    eeprom_write_variables ();
   }
 
   if (get_button_up_click_event ())
@@ -694,7 +694,7 @@ void power_off_management (void)
   {
     // save values to EEPROM
     configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
-    eeprom_write_variables_values ();
+    eeprom_write_variables ();
 
     // clear LCD so it is clear to user what is happening
     lcd_clear ();
@@ -870,7 +870,7 @@ void walk_assist_state (void)
     {
       motor_controller_data.ui8_walk_assist_level = 1;
       lcd_enable_walk_symbol (1);
-      if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_max_speed = 99; } //Offroad-Mode enabled!
+      if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_wheel_max_speed = 99; } //Offroad-Mode enabled!
     }
     else
     {
@@ -893,7 +893,7 @@ void odometer (void)
   {
     clear_button_onoff_click_event ();
     configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 4;
-    configuration_variables.ui8_max_speed = 25; //Offroad-Mode disabled 
+    configuration_variables.ui8_wheel_max_speed = 25; //Offroad-Mode disabled 
   }
 
   switch (configuration_variables.ui8_odometer_field_state)

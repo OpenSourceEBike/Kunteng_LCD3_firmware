@@ -18,12 +18,13 @@
 volatile uint8_t ui8_received_package_flag = 0;
 volatile uint8_t ui8_rx_buffer[20];
 volatile uint8_t ui8_rx_counter = 0;
-volatile uint8_t ui8_tx_buffer[11];
+volatile uint8_t ui8_tx_buffer[9];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
 static uint16_t ui16_crc_rx;
 static uint16_t ui16_crc_tx;
+static uint8_t ui8_lcd_variable_id = 0;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 volatile uint8_t ui8_uart_received_first_package = 0;
@@ -140,34 +141,63 @@ void clock_uart_data (void)
       // walk assist level state
       if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[1] |= 0x20;
 
-      // battery low voltage cut-off
-      ui8_tx_buffer[2] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 0xff);
-      ui8_tx_buffer[3] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8);
-
       // battery max current in amps
-      ui8_tx_buffer[4] = p_configuration_variables->ui8_battery_max_current;
+      ui8_tx_buffer[2] = p_configuration_variables->ui8_battery_max_current;
 
       // motor power in 10 watts unit
-      ui8_tx_buffer[5] = p_configuration_variables->ui8_target_max_battery_power_div10;
+      ui8_tx_buffer[3] = p_configuration_variables->ui8_target_max_battery_power_div10;
 
-      // wheel perimeter
-      ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
-      ui8_tx_buffer[7] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
+      // now send a variable for each package sent. Keep cycling so all variables are sent
+#define VARIABLE_ID_MAX_NUMBER 4
+      ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
+      ui8_tx_buffer[4] = ui8_lcd_variable_id;
 
-      // target max wheel speed
-      ui8_tx_buffer[8] = p_configuration_variables->ui8_max_speed;
+      switch (ui8_lcd_variable_id)
+      {
+        case 0:
+          // battery low voltage cut-off
+          ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 0xff);
+          ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8);
+        break;
+
+        case 1:
+          // wheel perimeter
+          ui8_tx_buffer[5] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter & 0xff);
+          ui8_tx_buffer[6] = (uint8_t) (p_configuration_variables->ui16_wheel_perimeter >> 8);
+        break;
+
+        case 2:
+          // wheel max speed
+          ui8_tx_buffer[5] = p_configuration_variables->ui8_wheel_max_speed;
+          // PAS_MAX_CADENCE_RPM
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_pas_max_cadence;
+        break;
+
+        case 3:
+          // bit 0: cruise control
+          // bit 1: motor voltage type: 36V or 48V
+          // bit 2: MOTOR_ASSISTANCE_CAN_START_WITHOUT_PEDAL_ROTATION
+          ui8_tx_buffer[5] = (p_configuration_variables->ui8_cruise_control & 1) |
+                             ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
+                              ((p_configuration_variables->ui8_motor_assistance_startup_config & 1) << 2);
+        break;
+
+        default:
+          ui8_lcd_variable_id = 0;
+        break;
+      }
 
       // prepare crc of the package
       ui16_crc_tx = 0xffff;
-      for (ui8_i = 0; ui8_i <= 8; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 6; ui8_i++)
       {
         crc16 (ui8_tx_buffer[ui8_i], &ui16_crc_tx);
       }
-      ui8_tx_buffer[9] = (uint8_t) (ui16_crc_tx & 0xff);
-      ui8_tx_buffer[10] = (uint8_t) (ui16_crc_tx >> 8) & 0xff;
+      ui8_tx_buffer[7] = (uint8_t) (ui16_crc_tx & 0xff);
+      ui8_tx_buffer[8] = (uint8_t) (ui16_crc_tx >> 8) & 0xff;
 
       // send the full package to UART
-      for (ui8_i = 0; ui8_i <= 10; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 8; ui8_i++)
       {
         putchar (ui8_tx_buffer[ui8_i]);
       }

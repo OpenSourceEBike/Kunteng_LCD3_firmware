@@ -19,7 +19,7 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_ASSIST_LEVEL,
     DEFAULT_VALUE_WHEEL_PERIMETER_0,
     DEFAULT_VALUE_WHEEL_PERIMETER_1,
-    DEFAULT_VALUE_MAX_SPEED,
+    DEFAULT_VALUE_WHEEL_MAX_SPEED,
     DEFAULT_VALUE_UNITS_TYPE,
     DEFAULT_VALUE_WH_OFFSET,
     DEFAULT_VALUE_WH_OFFSET,
@@ -35,11 +35,14 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER,
     DEFAULT_VALUE_BATTERY_CELLS_NUMBER,
     DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0,
-    DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1
+    DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1,
+    DEFAULT_VALUE_PAS_MAX_CADENCE,
+    DEFAULT_VALUE_CONFIG_0
   };
 
-void eeprom_write_array (uint8_t *array_values);
-void eeprom_read_values_to_variables (void);
+static void eeprom_write_array (uint8_t *array);
+static void eeprom_read_values_to_variables (void);
+static void variables_to_array (uint8_t *ui8_array);
 
 void eeprom_init (void)
 {
@@ -65,7 +68,7 @@ void eeprom_init_variables (void)
   if ((p_configuration_variables->ui8_assist_level > 5) ||
       (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
       (p_configuration_variables->ui16_wheel_perimeter < 750) ||
-      (p_configuration_variables->ui8_max_speed > 99) ||
+      (p_configuration_variables->ui8_wheel_max_speed > 99) ||
       (p_configuration_variables->ui8_units_type > 1) ||
       (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
       (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
@@ -76,14 +79,18 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui8_battery_cells_number > 15) ||
       (p_configuration_variables->ui8_battery_cells_number < 6) ||
       (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
-      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160))
+      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160) ||
+      (p_configuration_variables->ui8_pas_max_cadence > 175) ||
+      (p_configuration_variables->ui8_cruise_control > 1) ||
+      (p_configuration_variables->ui8_motor_voltage_type > 1) ||
+      (p_configuration_variables->ui8_motor_assistance_startup_config > 1))
   {
     eeprom_write_array (array_default_values);
     eeprom_read_values_to_variables ();
   }
 }
 
-void eeprom_read_values_to_variables (void)
+static void eeprom_read_values_to_variables (void)
 {
   static uint8_t ui8_temp;
   static uint16_t ui16_temp;
@@ -96,7 +103,7 @@ void eeprom_read_values_to_variables (void)
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
   p_configuration_variables->ui16_wheel_perimeter = ui16_temp;
 
-  p_configuration_variables->ui8_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
+  p_configuration_variables->ui8_wheel_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
   p_configuration_variables->ui8_units_type = FLASH_ReadByte (ADDRESS_UNITS_TYPE);
 
   ui32_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_0);
@@ -122,42 +129,55 @@ void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_battery_max_current = FLASH_ReadByte (ADDRESS_BATTERY_MAX_CURRENT);
   p_configuration_variables->ui8_target_max_battery_power_div10 = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
   p_configuration_variables->ui8_battery_cells_number = FLASH_ReadByte (ADDRESS_BATTERY_CELLS_NUMBER);
+
   ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0);
   ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1);
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
   p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 = ui16_temp;
+
+  p_configuration_variables->ui8_pas_max_cadence = FLASH_ReadByte (ADDRESS_PAS_MAX_CADENCE);
+
+  ui8_temp = FLASH_ReadByte (ADDRESS_CONFIG_0);
+  p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
+  p_configuration_variables->ui8_motor_assistance_startup_config = (ui8_temp & 2) >> 1;
 }
 
-void eeprom_write_variables_values (void)
+void eeprom_write_variables (void)
 {
-  static uint8_t array_values [EEPROM_BYTES_STORED];
-
-  array_values [0] = KEY;
-  array_values [1] = p_configuration_variables->ui8_assist_level;
-  array_values [2] = p_configuration_variables->ui16_wheel_perimeter & 255;
-  array_values [3] = (p_configuration_variables->ui16_wheel_perimeter >> 8) & 255;
-  array_values [4] = p_configuration_variables->ui8_max_speed;
-  array_values [5] = p_configuration_variables->ui8_units_type;
-  array_values [6] = p_configuration_variables->ui32_wh_x10_offset & 255;
-  array_values [7] = (p_configuration_variables->ui32_wh_x10_offset >> 8) & 255;
-  array_values [8] = (p_configuration_variables->ui32_wh_x10_offset >> 16) & 255;
-  array_values [9] = (p_configuration_variables->ui32_wh_x10_offset >> 24) & 255;
-  array_values [10] = p_configuration_variables->ui32_wh_x10_100_percent & 255;
-  array_values [11] = (p_configuration_variables->ui32_wh_x10_100_percent >> 8) & 255;
-  array_values [12] = (p_configuration_variables->ui32_wh_x10_100_percent >> 16) & 255;
-  array_values [13] = (p_configuration_variables->ui32_wh_x10_100_percent >> 24) & 255;
-  array_values [14] = p_configuration_variables->ui8_show_numeric_battery_soc;
-  array_values [15] = p_configuration_variables->ui8_odometer_field_state;
-  array_values [16] = p_configuration_variables->ui8_battery_max_current;
-  array_values [17] = p_configuration_variables->ui8_target_max_battery_power_div10;
-  array_values [18] = p_configuration_variables->ui8_battery_cells_number;
-  array_values [19] = p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 255;
-  array_values [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
-
-  eeprom_write_array (array_values);
+  uint8_t array_variables [EEPROM_BYTES_STORED];
+  variables_to_array (array_variables);
+  eeprom_write_array (array_variables);
 }
 
-void eeprom_write_array (uint8_t *array_values)
+static void variables_to_array (uint8_t *ui8_array)
+{
+  ui8_array [0] = KEY;
+  ui8_array [1] = p_configuration_variables->ui8_assist_level;
+  ui8_array [2] = p_configuration_variables->ui16_wheel_perimeter & 255;
+  ui8_array [3] = (p_configuration_variables->ui16_wheel_perimeter >> 8) & 255;
+  ui8_array [4] = p_configuration_variables->ui8_wheel_max_speed;
+  ui8_array [5] = p_configuration_variables->ui8_units_type;
+  ui8_array [6] = p_configuration_variables->ui32_wh_x10_offset & 255;
+  ui8_array [7] = (p_configuration_variables->ui32_wh_x10_offset >> 8) & 255;
+  ui8_array [8] = (p_configuration_variables->ui32_wh_x10_offset >> 16) & 255;
+  ui8_array [9] = (p_configuration_variables->ui32_wh_x10_offset >> 24) & 255;
+  ui8_array [10] = p_configuration_variables->ui32_wh_x10_100_percent & 255;
+  ui8_array [11] = (p_configuration_variables->ui32_wh_x10_100_percent >> 8) & 255;
+  ui8_array [12] = (p_configuration_variables->ui32_wh_x10_100_percent >> 16) & 255;
+  ui8_array [13] = (p_configuration_variables->ui32_wh_x10_100_percent >> 24) & 255;
+  ui8_array [14] = p_configuration_variables->ui8_show_numeric_battery_soc;
+  ui8_array [15] = p_configuration_variables->ui8_odometer_field_state;
+  ui8_array [16] = p_configuration_variables->ui8_battery_max_current;
+  ui8_array [17] = p_configuration_variables->ui8_target_max_battery_power_div10;
+  ui8_array [18] = p_configuration_variables->ui8_battery_cells_number;
+  ui8_array [19] = p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 255;
+  ui8_array [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
+  ui8_array [21] = p_configuration_variables->ui8_pas_max_cadence;
+  ui8_array [22] = (p_configuration_variables->ui8_motor_voltage_type & 1) |
+                      ((p_configuration_variables->ui8_motor_assistance_startup_config & 1) << 1);
+}
+
+static void eeprom_write_array (uint8_t *array)
 {
   uint8_t ui8_i;
 
@@ -168,9 +188,8 @@ void eeprom_write_array (uint8_t *array_values)
 
   for (ui8_i = 0; ui8_i < EEPROM_BYTES_STORED; ui8_i++)
   {
-    FLASH_ProgramByte (EEPROM_BASE_ADDRESS + ui8_i, *array_values++);
+    FLASH_ProgramByte (EEPROM_BASE_ADDRESS + ui8_i, *array++);
   }
 
   FLASH_Lock (FLASH_MEMTYPE_DATA);
 }
-
