@@ -80,10 +80,9 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui8_battery_cells_number < 6) ||
       (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
       (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160) ||
-      (p_configuration_variables->ui8_pas_max_cadence > 175) ||
       (p_configuration_variables->ui8_cruise_control > 1) ||
       (p_configuration_variables->ui8_motor_voltage_type > 1) ||
-      (p_configuration_variables->ui8_motor_assistance_startup_config > 1))
+      (p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation > 1))
   {
     eeprom_write_array (array_default_values);
     eeprom_read_values_to_variables ();
@@ -139,7 +138,7 @@ static void eeprom_read_values_to_variables (void)
 
   ui8_temp = FLASH_ReadByte (ADDRESS_CONFIG_0);
   p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
-  p_configuration_variables->ui8_motor_assistance_startup_config = (ui8_temp & 2) >> 1;
+  p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation = (ui8_temp & 2) >> 1;
 }
 
 void eeprom_write_variables (void)
@@ -174,7 +173,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
   ui8_array [21] = p_configuration_variables->ui8_pas_max_cadence;
   ui8_array [22] = (p_configuration_variables->ui8_motor_voltage_type & 1) |
-                      ((p_configuration_variables->ui8_motor_assistance_startup_config & 1) << 1);
+                      ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1);
 }
 
 static void eeprom_write_array (uint8_t *array)

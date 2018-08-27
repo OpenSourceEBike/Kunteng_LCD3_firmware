@@ -184,7 +184,7 @@ void clock_uart_data (void)
           // bit 2: MOTOR_ASSISTANCE_CAN_START_WITHOUT_PEDAL_ROTATION
           ui8_tx_buffer[5] = (p_configuration_variables->ui8_cruise_control & 1) |
                              ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
-                              ((p_configuration_variables->ui8_motor_assistance_startup_config & 1) << 2);
+                              ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2);
         break;
 
         default:
