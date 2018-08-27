@@ -16,7 +16,7 @@
 #include "utils.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[20];
+volatile uint8_t ui8_rx_buffer[21];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[9];
 volatile uint8_t ui8_tx_counter = 0;
@@ -25,6 +25,7 @@ volatile uint8_t ui8_checksum;
 static uint16_t ui16_crc_rx;
 static uint16_t ui16_crc_tx;
 static uint8_t ui8_lcd_variable_id = 0;
+static uint8_t ui8_last_package_id;
 volatile uint8_t ui8_byte_received;
 volatile uint8_t ui8_state_machine = 0;
 volatile uint8_t ui8_uart_received_first_package = 0;
@@ -74,7 +75,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       ui8_rx_counter++;
 
       // see if is the last byte of the package
-      if (ui8_rx_counter > 21)
+      if (ui8_rx_counter > 22)
       {
         ui8_rx_counter = 0;
         ui8_state_machine = 0;
@@ -99,31 +100,32 @@ void clock_uart_data (void)
     // validation of the package data
     // last byte is the checksum
     ui16_crc_rx = 0xffff;
-    for (ui8_i = 0; ui8_i <= 17; ui8_i++)
+    for (ui8_i = 0; ui8_i <= 18; ui8_i++)
     {
       crc16 (ui8_rx_buffer[ui8_i], &ui16_crc_rx);
     }
 
-    if (((((uint16_t) ui8_rx_buffer [19]) << 8) + ((uint16_t) ui8_rx_buffer [18])) == ui16_crc_rx)
+    if (((((uint16_t) ui8_rx_buffer [20]) << 8) + ((uint16_t) ui8_rx_buffer [19])) == ui16_crc_rx)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
       p_configuration_variables = get_configuration_variables ();
 
-      p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[1];
-      p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[2] & 0x30)) << 4;
-      p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[3];
-      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 8) + ((uint16_t) ui8_rx_buffer [4]);
-      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[6];
-      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[7];
-      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[8];
-      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[9];
-      p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[10];
-      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[11];
-      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[12];
-      p_motor_controller_data->ui8_pedal_human_power = ui8_rx_buffer[13];
-      p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[14];
-      p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [16]) << 8) + ((uint16_t) ui8_rx_buffer [15]);
-      p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[17];
+      ui8_last_package_id = ui8_tx_buffer[1];
+      p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[2];
+      p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[3] & 0x30)) << 4;
+      p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[4];
+      p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [5]) << 6) + ((uint16_t) ui8_rx_buffer [5]);
+      p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_error_code = ui8_rx_buffer[8];
+      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[9];
+      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[10];
+      p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[11];
+      p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[12];
+      p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[13];
+      p_motor_controller_data->ui8_pedal_human_power = ui8_rx_buffer[14];
+      p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[15];
+      p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [17]) << 8) + ((uint16_t) ui8_rx_buffer [16]);
+      p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[18];
 
       // signal that we processed the full package
       ui8_received_package_flag = 0;
@@ -147,11 +149,14 @@ void clock_uart_data (void)
       // motor power in 10 watts unit
       ui8_tx_buffer[3] = p_configuration_variables->ui8_target_max_battery_power_div10;
 
-      // now send a variable for each package sent. Keep cycling so all variables are sent
+      // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
+      // keep cycling so all variables are sent
 #define VARIABLE_ID_MAX_NUMBER 4
-      ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
+      if (ui8_last_package_id == ui8_lcd_variable_id)
+      {
+        ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
+      }
       ui8_tx_buffer[4] = ui8_lcd_variable_id;
-
       switch (ui8_lcd_variable_id)
       {
         case 0:
