@@ -35,10 +35,12 @@
 #define ADDRESS_BATTERY_CELLS_NUMBER                18 + EEPROM_BASE_ADDRESS
 #define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0   19 + EEPROM_BASE_ADDRESS
 #define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1   20 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                         21
+#define ADDRESS_PAS_MAX_CADENCE                     21 + EEPROM_BASE_ADDRESS
+#define ADDRESS_CONFIG_0                            22 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                         23
 
 void eeprom_init (void);
 void eeprom_init_variables (void);
-void eeprom_write_variables_values (void);
+void eeprom_write_variables (void);
 
 #endif /* _EEPROM_H_ */
