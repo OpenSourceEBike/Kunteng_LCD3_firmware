@@ -21,6 +21,7 @@
 // *************************************************************************** //
 // EEPROM memory variables default values
 #define DEFAULT_VALUE_ASSIST_LEVEL                      2
+#define DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS           5
 #define DEFAULT_VALUE_WHEEL_PERIMETER_0                 2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
 #define DEFAULT_VALUE_WHEEL_PERIMETER_1                 8
 #define DEFAULT_VALUE_WHEEL_MAX_SPEED                   50
@@ -36,6 +37,16 @@
 #define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1 1
 #define DEFAULT_VALUE_PAS_MAX_CADENCE                   110 // 110 RPM
 #define DEFAULT_VALUE_CONFIG_0                          0 // ui8_motor_voltage_type = 0; ui8_motor_assistance_startup_config = 0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_1             10 // 1.0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_2             20 // 2.0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_3             30
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_4             40
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_5             50
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_6             60
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7             70
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8             80
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9             90
+
 
 // *************************************************************************** //
 

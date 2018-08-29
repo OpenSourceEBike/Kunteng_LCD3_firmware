@@ -21,7 +21,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 5
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 6
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -120,11 +120,12 @@ void walk_assist_state (void);
 void lcd_execute_main_screen (void);
 void lcd_execute_menu_config (void);
 void lcd_execute_menu_config_power (void);
-void lcd_execute_menu_config_submenu_0 (void);
-void lcd_execute_menu_config_submenu_1 (void);
-void lcd_execute_menu_config_submenu_2 (void);
-void lcd_execute_menu_config_submenu_3 (void);
-void lcd_execute_menu_config_submenu_4 (void);
+void lcd_execute_menu_config_submenu_wheel_config (void);
+void lcd_execute_menu_config_submenu_battery (void);
+void lcd_execute_menu_config_submenu_battery_soc (void);
+void lcd_execute_menu_config_submenu_assist_level (void);
+void lcd_execute_menu_config_submenu_various (void);
+void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number);
 
@@ -232,23 +233,27 @@ void lcd_execute_menu_config (void)
     switch (ui8_lcd_menu_config_submenu_number)
     {
       case 0:
-        lcd_execute_menu_config_submenu_0 ();
+        lcd_execute_menu_config_submenu_wheel_config ();
       break;
 
       case 1:
-        lcd_execute_menu_config_submenu_1 ();
+        lcd_execute_menu_config_submenu_battery ();
       break;
 
       case 2:
-        lcd_execute_menu_config_submenu_2 ();
+        lcd_execute_menu_config_submenu_battery_soc ();
       break;
 
       case 3:
-        lcd_execute_menu_config_submenu_3 ();
+        lcd_execute_menu_config_submenu_assist_level ();
       break;
 
       case 4:
-        lcd_execute_menu_config_submenu_4 ();
+        lcd_execute_menu_config_submenu_various ();
+      break;
+
+      case 5:
+        lcd_execute_menu_config_submenu_technical ();
       break;
 
       default:
@@ -267,7 +272,7 @@ void lcd_execute_menu_config (void)
   }
 }
 
-void lcd_execute_menu_config_submenu_0 (void)
+void lcd_execute_menu_config_submenu_wheel_config (void)
 {
   // advance on submenus on button_onoff_click_event
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 3);
@@ -357,7 +362,7 @@ void lcd_execute_menu_config_submenu_0 (void)
   }
 }
 
-void lcd_execute_menu_config_submenu_1 (void)
+void lcd_execute_menu_config_submenu_battery (void)
 {
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 3);
 
@@ -431,7 +436,7 @@ void lcd_execute_menu_config_submenu_1 (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
-void lcd_execute_menu_config_submenu_2 (void)
+void lcd_execute_menu_config_submenu_battery_soc (void)
 {
   uint8_t ui8_temp;
 
@@ -552,7 +557,57 @@ void lcd_execute_menu_config_submenu_2 (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
-void lcd_execute_menu_config_submenu_3 (void)
+void lcd_execute_menu_config_submenu_assist_level (void)
+{
+  uint8_t ui8_temp;
+
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, (configuration_variables.ui8_number_of_assist_levels + 1));
+
+  // number of assist levels: 0 to 9
+  if (ui8_lcd_menu_config_submenu_state == 0)
+  {
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+      if (configuration_variables.ui8_number_of_assist_levels < 9) { configuration_variables.ui8_number_of_assist_levels++; }
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      if (configuration_variables.ui8_number_of_assist_levels > 1) { configuration_variables.ui8_number_of_assist_levels--; }
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (configuration_variables.ui8_number_of_assist_levels, ODOMETER_FIELD, 1);
+    }
+  }
+  // value of each assist level
+  else
+  {
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+      configuration_variables.ui8_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)]++;
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      configuration_variables.ui8_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)]--;
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (configuration_variables.ui8_assist_level_factors [ui8_lcd_menu_config_submenu_state - 1], ODOMETER_FIELD, 0);
+    }
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+}
+
+void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
 
@@ -626,7 +681,7 @@ void lcd_execute_menu_config_submenu_3 (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
-void lcd_execute_menu_config_submenu_4 (void)
+void lcd_execute_menu_config_submenu_technical (void)
 {
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 9);
 
@@ -881,7 +936,8 @@ void assist_level_state (void)
     clear_button_up_click_event ();
 
     configuration_variables.ui8_assist_level++;
-    if (configuration_variables.ui8_assist_level > 5) { configuration_variables.ui8_assist_level = 5; }
+    if (configuration_variables.ui8_assist_level > configuration_variables.ui8_number_of_assist_levels)
+      { configuration_variables.ui8_assist_level = configuration_variables.ui8_number_of_assist_levels; }
   }
 
   if (get_button_down_click_event ())

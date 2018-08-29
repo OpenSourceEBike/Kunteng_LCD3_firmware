@@ -11,7 +11,7 @@
 
 #include "lcd.h"
 
-#define KEY                                         0xca
+#define KEY                                         0xcf
 
 #define EEPROM_BASE_ADDRESS 			                  0x4000
 #define ADDRESS_KEY 				                        0 + EEPROM_BASE_ADDRESS
@@ -37,7 +37,17 @@
 #define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1   20 + EEPROM_BASE_ADDRESS
 #define ADDRESS_PAS_MAX_CADENCE                     21 + EEPROM_BASE_ADDRESS
 #define ADDRESS_CONFIG_0                            22 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                         23
+#define ADDRESS_ASSIST_LEVEL_FACTOR_1               23 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_2               24 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_3               25 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_4               26 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_5               27 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_6               28 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_7               29 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_8               30 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_9               31 + EEPROM_BASE_ADDRESS
+#define ADDRESS_NUMBER_OF_ASSIST_LEVELS             32 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                         33
 
 void eeprom_init (void);
 void eeprom_init_variables (void);

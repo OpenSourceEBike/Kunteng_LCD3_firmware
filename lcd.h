@@ -38,6 +38,7 @@ typedef struct _motor_controller_data
 typedef struct _configuration_variables
 {
   uint8_t ui8_assist_level;
+  uint8_t ui8_number_of_assist_levels;
   uint16_t ui16_wheel_perimeter;
   uint8_t ui8_wheel_max_speed;
   uint8_t ui8_units_type;
@@ -53,6 +54,7 @@ typedef struct _configuration_variables
   uint8_t ui8_motor_assistance_startup_without_pedal_rotation;
   uint8_t ui8_pas_max_cadence;
   uint8_t ui8_cruise_control;
+  uint8_t ui8_assist_level_factors [9];
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits
