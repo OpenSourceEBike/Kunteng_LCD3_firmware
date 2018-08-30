@@ -13,7 +13,6 @@
 #include "main.h"
 #include "lcd.h"
 
-static struct_configuration_variables *p_configuration_variables;
 static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     KEY,
     DEFAULT_VALUE_ASSIST_LEVEL,
@@ -47,7 +46,17 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7,
     DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8,
     DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9,
-    DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS
+    DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_STATE,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9
   };
 
 static void eeprom_write_array (uint8_t *array);
@@ -57,8 +66,6 @@ static void variables_to_array (uint8_t *ui8_array);
 void eeprom_init (void)
 {
   uint8_t ui8_data;
-
-  p_configuration_variables = get_configuration_variables ();
 
   // start by reading address 0 and see if value is different from our key,
   // if so mean that eeprom memory is clean and we need to populate: should happen after erasing the microcontroller
@@ -71,12 +78,14 @@ void eeprom_init (void)
 
 void eeprom_init_variables (void)
 {
+  struct_configuration_variables *p_configuration_variables;
+  p_configuration_variables = get_configuration_variables ();
+
   eeprom_read_values_to_variables ();
 
   // now verify if any EEPROM saved value is out of valid range and if so,
   // write correct ones and read again
-  if ((p_configuration_variables->ui8_assist_level > 5) ||
-      (p_configuration_variables->ui8_number_of_assist_levels < 1) ||
+  if ((p_configuration_variables->ui8_number_of_assist_levels < 1) ||
       (p_configuration_variables->ui8_number_of_assist_levels > 9) ||
       (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
       (p_configuration_variables->ui16_wheel_perimeter < 750) ||
@@ -88,6 +97,7 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui8_odometer_field_state > 4) ||
       (p_configuration_variables->ui8_battery_max_current > 100) ||
       (p_configuration_variables->ui8_target_max_battery_power_div10 > 195) ||
+      (p_configuration_variables->ui8_startup_motor_power_boost_state > 1) ||
       (p_configuration_variables->ui8_battery_cells_number > 15) ||
       (p_configuration_variables->ui8_battery_cells_number < 6) ||
       (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
@@ -108,6 +118,9 @@ static void eeprom_read_values_to_variables (void)
   uint32_t ui32_temp;
   uint8_t ui8_index;
 
+  struct_configuration_variables *p_configuration_variables;
+  p_configuration_variables = get_configuration_variables ();
+
   p_configuration_variables->ui8_assist_level = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL);
 
   ui16_temp = FLASH_ReadByte (ADDRESS_WHEEL_PERIMETER_0);
@@ -115,7 +128,7 @@ static void eeprom_read_values_to_variables (void)
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
   p_configuration_variables->ui16_wheel_perimeter = ui16_temp;
 
-  p_configuration_variables->ui8_wheel_max_speed = FLASH_ReadByte (ADDRESS_MAX_SPEED);
+  p_configuration_variables->ui8_wheel_max_speed = FLASH_ReadByte (ADDRESS_MAX_WHEEL_SPEED);
   p_configuration_variables->ui8_units_type = FLASH_ReadByte (ADDRESS_UNITS_TYPE);
 
   ui32_temp = FLASH_ReadByte (ADDRESS_HW_X10_OFFSET_0);
@@ -153,12 +166,17 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
   p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation = (ui8_temp & 2) >> 1;
 
+  p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
     p_configuration_variables->ui8_assist_level_factors [ui8_index] = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL_FACTOR_1 + ui8_index);
   }
 
-  p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
+  p_configuration_variables->ui8_startup_motor_power_boost_state = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE);
+  for (ui8_index = 0; ui8_index < 9; ui8_index++)
+  {
+    p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
+  }
 }
 
 void eeprom_write_variables (void)
@@ -171,6 +189,9 @@ void eeprom_write_variables (void)
 static void variables_to_array (uint8_t *ui8_array)
 {
   uint8_t ui8_index;
+
+  struct_configuration_variables *p_configuration_variables;
+  p_configuration_variables = get_configuration_variables ();
 
   ui8_array [0] = KEY;
   ui8_array [1] = p_configuration_variables->ui8_assist_level;
@@ -198,10 +219,15 @@ static void variables_to_array (uint8_t *ui8_array)
                       ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-      ui8_array [23 + ui8_index] = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL_FACTOR_1 + ui8_index);
+    ui8_array [23 + ui8_index] = p_configuration_variables->ui8_assist_level_factors [ui8_index];
   }
-
   ui8_array [32] = p_configuration_variables->ui8_number_of_assist_levels;
+
+  ui8_array [33] = p_configuration_variables->ui8_startup_motor_power_boost_state;
+  for (ui8_index = 0; ui8_index < 9; ui8_index++)
+  {
+    ui8_array [34 + ui8_index] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [ui8_index];
+  }
 }
 
 static void eeprom_write_array (uint8_t *array)

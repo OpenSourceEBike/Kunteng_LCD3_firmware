@@ -21,7 +21,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 6
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 7
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -124,6 +124,7 @@ void lcd_execute_menu_config_submenu_wheel_config (void);
 void lcd_execute_menu_config_submenu_battery (void);
 void lcd_execute_menu_config_submenu_battery_soc (void);
 void lcd_execute_menu_config_submenu_assist_level (void);
+void lcd_execute_menu_config_submenu_motor_startup_power_boost (void);
 void lcd_execute_menu_config_submenu_various (void);
 void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
@@ -249,10 +250,14 @@ void lcd_execute_menu_config (void)
       break;
 
       case 4:
-        lcd_execute_menu_config_submenu_various ();
+        lcd_execute_menu_config_submenu_motor_startup_power_boost ();
       break;
 
       case 5:
+        lcd_execute_menu_config_submenu_various ();
+      break;
+
+      case 6:
         lcd_execute_menu_config_submenu_technical ();
       break;
 
@@ -301,7 +306,7 @@ void lcd_execute_menu_config_submenu_wheel_config (void)
       // print wheel speed only half of the time
       if (ui8_lcd_menu_flash_state)
       {
-        lcd_print (configuration_variables.ui8_wheel_max_speed * 10, WHEEL_SPEED_FIELD, 0);
+        lcd_print (((uint16_t) configuration_variables.ui8_wheel_max_speed) * 10, WHEEL_SPEED_FIELD, 0);
       }
 
       lcd_enable_kmh_symbol (1);
@@ -607,6 +612,58 @@ void lcd_execute_menu_config_submenu_assist_level (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
+void lcd_execute_menu_config_submenu_motor_startup_power_boost (void)
+{
+  uint8_t ui8_temp;
+
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, (configuration_variables.ui8_number_of_assist_levels + 1));
+
+  // enable or disable
+  if (ui8_lcd_menu_config_submenu_state == 0)
+  {
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+      configuration_variables.ui8_startup_motor_power_boost_state = 1;
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      configuration_variables.ui8_startup_motor_power_boost_state = 0;
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (configuration_variables.ui8_startup_motor_power_boost_state, ODOMETER_FIELD, 1);
+    }
+  }
+  // value of each assist level power boost
+  else
+  {
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+      configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)] += 5;
+      // the BATTERY_POWER_FIELD can't show higher value
+      if (configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)] > 195) { configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)] = 195; }
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      if (configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)] > 5) { configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)] -= 5; }
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (configuration_variables.ui8_startup_motor_power_boost_assist_level_factors [ui8_lcd_menu_config_submenu_state - 1] * 10, ODOMETER_FIELD, 1);
+    }
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+}
+
 void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
@@ -767,8 +824,7 @@ void lcd_execute_menu_config_power (void)
   {
     button_clear_events ();
 
-    configuration_variables.ui8_target_max_battery_power_div10 -= 5;
-    if (configuration_variables.ui8_target_max_battery_power_div10 < 5) { configuration_variables.ui8_target_max_battery_power_div10 = 0; }
+    if (configuration_variables.ui8_target_max_battery_power_div10 > 5) { configuration_variables.ui8_target_max_battery_power_div10 -= 5; }
   }
 
   if (ui8_lcd_menu_flash_state)
@@ -987,7 +1043,8 @@ void walk_assist_state (void)
     {
       motor_controller_data.ui8_walk_assist_level = 1;
       lcd_enable_walk_symbol (1);
-      if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_wheel_max_speed = 99; } //Offroad-Mode enabled!
+      // Commented on 2018.08.30 as this is creating issues to users because they don't how this offroad mode works.
+      //if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_wheel_max_speed = 99; } //Offroad-Mode enabled!
     }
     else
     {
@@ -1010,7 +1067,8 @@ void odometer (void)
   {
     clear_button_onoff_click_event ();
     configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 4;
-    configuration_variables.ui8_wheel_max_speed = 25; //Offroad-Mode disabled 
+    // Commented on 2018.08.30 as this is creating issues to users because they don't how this offroad mode works.
+    //configuration_variables.ui8_wheel_max_speed = 25; // Offroad-Mode disabled
   }
 
   switch (configuration_variables.ui8_odometer_field_state)

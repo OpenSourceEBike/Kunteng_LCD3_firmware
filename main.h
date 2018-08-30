@@ -20,32 +20,42 @@
 
 // *************************************************************************** //
 // EEPROM memory variables default values
-#define DEFAULT_VALUE_ASSIST_LEVEL                      2
-#define DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS           5
-#define DEFAULT_VALUE_WHEEL_PERIMETER_0                 2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
-#define DEFAULT_VALUE_WHEEL_PERIMETER_1                 8
-#define DEFAULT_VALUE_WHEEL_MAX_SPEED                   50
-#define DEFAULT_VALUE_UNITS_TYPE                        0 // 0 = km/h
-#define DEFAULT_VALUE_WH_OFFSET                         0
-#define DEFAULT_VALUE_HW_X10_100_PERCENT                0
-#define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC          0
-#define DEFAULT_VALUE_ODOMETER_FIELD_STATE              0
-#define DEFAULT_VALUE_BATTERY_MAX_CURRENT               10 // 10 amps
-#define DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER          50 // 500 watts x10
-#define DEFAULT_VALUE_BATTERY_CELLS_NUMBER              13 // 13 --> 48V
-#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0 134 // 48v battery, LVC = 39.0 (3.0 * 13): (134 + (1 << 8))
-#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1 1
-#define DEFAULT_VALUE_PAS_MAX_CADENCE                   110 // 110 RPM
-#define DEFAULT_VALUE_CONFIG_0                          0 // ui8_motor_voltage_type = 0; ui8_motor_assistance_startup_config = 0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_1             10 // 1.0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_2             20 // 2.0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_3             30
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_4             40
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_5             50
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_6             60
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7             70
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8             80
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9             90
+#define DEFAULT_VALUE_ASSIST_LEVEL                                  2
+#define DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS                       5
+#define DEFAULT_VALUE_WHEEL_PERIMETER_0                             2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
+#define DEFAULT_VALUE_WHEEL_PERIMETER_1                             8
+#define DEFAULT_VALUE_WHEEL_MAX_SPEED                               50
+#define DEFAULT_VALUE_UNITS_TYPE                                    0 // 0 = km/h
+#define DEFAULT_VALUE_WH_OFFSET                                     0
+#define DEFAULT_VALUE_HW_X10_100_PERCENT                            0
+#define DEAFULT_VALUE_SHOW_NUMERIC_BATTERY_SOC                      0
+#define DEFAULT_VALUE_ODOMETER_FIELD_STATE                          0
+#define DEFAULT_VALUE_BATTERY_MAX_CURRENT                           10 // 10 amps
+#define DEFAULT_VALUE_TARGET_MAX_BATTERY_POWER                      50 // 500 watts x10
+#define DEFAULT_VALUE_BATTERY_CELLS_NUMBER                          13 // 13 --> 48V
+#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0             134 // 48v battery, LVC = 39.0 (3.0 * 13): (134 + (1 << 8))
+#define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1             1
+#define DEFAULT_VALUE_PAS_MAX_CADENCE                               110 // 110 RPM
+#define DEFAULT_VALUE_CONFIG_0                                      0 // ui8_motor_voltage_type = 0; ui8_motor_assistance_startup_config = 0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_1                         5 // 0.5
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_2                         10
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_3                         15
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_4                         20
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_5                         255 // here, get max assistance when pressing a little the pedals
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_6                         0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7                         0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8                         0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9                         0
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_STATE               1
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1      5 // 50W
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2      10
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3      20
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4      30
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5      195
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6      195
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7      195
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      195
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      195
 
 
 // *************************************************************************** //

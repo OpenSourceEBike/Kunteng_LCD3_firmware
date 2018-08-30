@@ -11,43 +11,53 @@
 
 #include "lcd.h"
 
-#define KEY                                         0xcf
+#define KEY                                         0xd1
 
-#define EEPROM_BASE_ADDRESS 			                  0x4000
-#define ADDRESS_KEY 				                        0 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL 			                  1 + EEPROM_BASE_ADDRESS
-#define ADDRESS_WHEEL_PERIMETER_0	                  2 + EEPROM_BASE_ADDRESS
-#define ADDRESS_WHEEL_PERIMETER_1                   3 + EEPROM_BASE_ADDRESS
-#define ADDRESS_MAX_SPEED	 		                      4 + EEPROM_BASE_ADDRESS
-#define ADDRESS_UNITS_TYPE                          5 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_OFFSET_0                     6 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_OFFSET_1                     7 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_OFFSET_2                     8 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_OFFSET_3                     9 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_100_PERCENT_OFFSET_0         10 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_100_PERCENT_OFFSET_1         11 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_100_PERCENT_OFFSET_2         12 + EEPROM_BASE_ADDRESS
-#define ADDRESS_HW_X10_100_PERCENT_OFFSET_3         13 + EEPROM_BASE_ADDRESS
-#define ADDRESS_SHOW_NUMERIC_BATTERY_SOC            14 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ODOMETER_FIELD_STATE                15 + EEPROM_BASE_ADDRESS
-#define ADDRESS_BATTERY_MAX_CURRENT                 16 + EEPROM_BASE_ADDRESS
-#define ADDRESS_TARGET_MAX_BATTERY_POWER            17 + EEPROM_BASE_ADDRESS
-#define ADDRESS_BATTERY_CELLS_NUMBER                18 + EEPROM_BASE_ADDRESS
-#define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0   19 + EEPROM_BASE_ADDRESS
-#define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1   20 + EEPROM_BASE_ADDRESS
-#define ADDRESS_PAS_MAX_CADENCE                     21 + EEPROM_BASE_ADDRESS
-#define ADDRESS_CONFIG_0                            22 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_1               23 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_2               24 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_3               25 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_4               26 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_5               27 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_6               28 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_7               29 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_8               30 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL_FACTOR_9               31 + EEPROM_BASE_ADDRESS
-#define ADDRESS_NUMBER_OF_ASSIST_LEVELS             32 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                         33
+#define EEPROM_BASE_ADDRESS 			                                          0x4000
+#define ADDRESS_KEY 				                                                0 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL 			                                          1 + EEPROM_BASE_ADDRESS
+#define ADDRESS_WHEEL_PERIMETER_0	                                          2 + EEPROM_BASE_ADDRESS
+#define ADDRESS_WHEEL_PERIMETER_1                                           3 + EEPROM_BASE_ADDRESS
+#define ADDRESS_MAX_WHEEL_SPEED	 	                                          4 + EEPROM_BASE_ADDRESS
+#define ADDRESS_UNITS_TYPE                                                  5 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_OFFSET_0                                             6 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_OFFSET_1                                             7 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_OFFSET_2                                             8 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_OFFSET_3                                             9 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_100_PERCENT_OFFSET_0                                 10 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_100_PERCENT_OFFSET_1                                 11 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_100_PERCENT_OFFSET_2                                 12 + EEPROM_BASE_ADDRESS
+#define ADDRESS_HW_X10_100_PERCENT_OFFSET_3                                 13 + EEPROM_BASE_ADDRESS
+#define ADDRESS_SHOW_NUMERIC_BATTERY_SOC                                    14 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_FIELD_STATE                                        15 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_MAX_CURRENT                                         16 + EEPROM_BASE_ADDRESS
+#define ADDRESS_TARGET_MAX_BATTERY_POWER                                    17 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_CELLS_NUMBER                                        18 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0                           19 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1                           20 + EEPROM_BASE_ADDRESS
+#define ADDRESS_PAS_MAX_CADENCE                                             21 + EEPROM_BASE_ADDRESS
+#define ADDRESS_CONFIG_0                                                    22 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_1                                       23 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_2                                       24 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_3                                       25 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_4                                       26 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_5                                       27 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_6                                       28 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_7                                       29 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_8                                       30 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL_FACTOR_9                                       31 + EEPROM_BASE_ADDRESS
+#define ADDRESS_NUMBER_OF_ASSIST_LEVELS                                     32 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE                             33 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1      34 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2      35 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3      36 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4      37 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5      38 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6      39 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7      40 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      41 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      42 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                                                 43
 
 void eeprom_init (void);
 void eeprom_init_variables (void);
