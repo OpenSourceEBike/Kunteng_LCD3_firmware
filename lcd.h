@@ -56,6 +56,7 @@ typedef struct _configuration_variables
   uint8_t ui8_cruise_control;
   uint8_t ui8_assist_level_factors [9];
   uint8_t ui8_startup_motor_power_boost_state;
+  uint8_t ui8_startup_motor_power_boost_time;
   uint8_t ui8_startup_motor_power_boost_assist_level_factors [9];
 } struct_configuration_variables;
 

@@ -158,7 +158,7 @@ void clock_uart_data (void)
 
       // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
-#define VARIABLE_ID_MAX_NUMBER 4
+#define VARIABLE_ID_MAX_NUMBER 5
       if (ui8_last_package_id == ui8_lcd_variable_id)
       {
         ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
@@ -189,12 +189,17 @@ void clock_uart_data (void)
           // bit 0: cruise control
           // bit 1: motor voltage type: 36V or 48V
           // bit 2: MOTOR_ASSISTANCE_CAN_START_WITHOUT_PEDAL_ROTATION
-          ui8_tx_buffer[6] = (p_configuration_variables->ui8_cruise_control & 1) |
+          ui8_tx_buffer[6] = ((p_configuration_variables->ui8_cruise_control & 1) |
                              ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
-                              ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2) |
-                              ((p_configuration_variables->ui8_startup_motor_power_boost_state & 1) << 3);
+                              ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2));
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_state;
+        break;
+
+        case 4:
           // startup motor power boost
-          ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [((p_configuration_variables->ui8_assist_level) - 1)];
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [((p_configuration_variables->ui8_assist_level) - 1)];
+          // startup motor power boost time
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_time;
         break;
 
         default:
