@@ -158,7 +158,7 @@ void clock_uart_data (void)
 
       // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
-#define VARIABLE_ID_MAX_NUMBER 5
+#define VARIABLE_ID_MAX_NUMBER 6
       if (ui8_last_package_id == ui8_lcd_variable_id)
       {
         ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
@@ -197,9 +197,14 @@ void clock_uart_data (void)
 
         case 4:
           // startup motor power boost
-          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [((p_configuration_variables->ui8_assist_level) - 1)];
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [((p_configuration_variables->ui8_assist_level) - 1)];
           // startup motor power boost time
           ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_time;
+        break;
+
+        case 5:
+          // startup motor power boost fade time
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
         break;
 
         default:

@@ -11,7 +11,7 @@
 
 #include "lcd.h"
 
-#define KEY                                                                 0xd2
+#define KEY                                                                 0xd7
 
 #define EEPROM_BASE_ADDRESS 			                                          0x4000
 #define ADDRESS_KEY 				                                                0 + EEPROM_BASE_ADDRESS
@@ -58,7 +58,8 @@
 #define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      41 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      42 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME                43 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                                                 44
+#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME           44 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                                                 45
 
 void eeprom_init (void);
 void eeprom_init_variables (void);

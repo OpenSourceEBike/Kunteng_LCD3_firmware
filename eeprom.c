@@ -57,7 +57,8 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9,
-    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME,
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME
   };
 
 static void eeprom_write_array (uint8_t *array);
@@ -98,7 +99,7 @@ void eeprom_init_variables (void)
       (p_configuration_variables->ui8_odometer_field_state > 4) ||
       (p_configuration_variables->ui8_battery_max_current > 100) ||
       (p_configuration_variables->ui8_target_max_battery_power_div10 > 195) ||
-      (p_configuration_variables->ui8_startup_motor_power_boost_state > 1) ||
+      (p_configuration_variables->ui8_startup_motor_power_boost_state > 3) ||
       (p_configuration_variables->ui8_battery_cells_number > 15) ||
       (p_configuration_variables->ui8_battery_cells_number < 6) ||
       (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
@@ -177,8 +178,10 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
+    p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
   }
+
+  p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
 }
 
 void eeprom_write_variables (void)
@@ -228,9 +231,10 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [33] = p_configuration_variables->ui8_startup_motor_power_boost_state;
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    ui8_array [34 + ui8_index] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors [ui8_index];
+    ui8_array [34 + ui8_index] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [ui8_index];
   }
   ui8_array [43] = p_configuration_variables->ui8_startup_motor_power_boost_time;
+  ui8_array [44] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
 }
 
 static void eeprom_write_array (uint8_t *array)

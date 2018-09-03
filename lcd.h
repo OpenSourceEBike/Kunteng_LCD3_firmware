@@ -57,7 +57,8 @@ typedef struct _configuration_variables
   uint8_t ui8_assist_level_factors [9];
   uint8_t ui8_startup_motor_power_boost_state;
   uint8_t ui8_startup_motor_power_boost_time;
-  uint8_t ui8_startup_motor_power_boost_assist_level_factors [9];
+  uint8_t ui8_startup_motor_power_boost_fade_time;
+  uint8_t ui8_startup_motor_power_boost_assist_level_factors_x10 [9];
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

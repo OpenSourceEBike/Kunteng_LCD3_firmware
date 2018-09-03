@@ -21,7 +21,7 @@
 // *************************************************************************** //
 // EEPROM memory variables default values
 #define DEFAULT_VALUE_ASSIST_LEVEL                                  3
-#define DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS                       5
+#define DEFAULT_VALUE_NUMBER_OF_ASSIST_LEVELS                       9
 #define DEFAULT_VALUE_WHEEL_PERIMETER_0                             2 // 26'' wheel: 2050mm perimeter (2 + (8 << 8))
 #define DEFAULT_VALUE_WHEEL_PERIMETER_1                             8
 #define DEFAULT_VALUE_WHEEL_MAX_SPEED                               50
@@ -37,26 +37,27 @@
 #define DEFAULT_VALUE_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_1             1
 #define DEFAULT_VALUE_PAS_MAX_CADENCE                               110 // 110 RPM
 #define DEFAULT_VALUE_CONFIG_0                                      0 // ui8_motor_voltage_type = 0; ui8_motor_assistance_startup_config = 0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_1                         5 // 0.5
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_2                         9
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_3                         13
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_4                         16
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_5                         255 // here, get max assistance when pressing a little the pedals
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_6                         0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7                         0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8                         0
-#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9                         0
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_1                         10 // 0.5
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_2                         14
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_3                         18
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_4                         22
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_5                         26
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_6                         30
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_7                         34
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_8                         38
+#define DEFAULT_VALUE_ASSIST_LEVEL_FACTOR_9                         255
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_STATE               1
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1      25 // 50W
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2      35
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3      55
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4      75
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5      195
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6      195
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7      195
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      195
-#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      195
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1      5 // 0.5
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2      15
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3      20
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4      30
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5      40
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6      50
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7      60
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      70
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      255
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME                25 // 2.5 seconds
+#define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME           25 // 2.5 seconds
 
 
 // *************************************************************************** //
