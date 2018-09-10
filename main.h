@@ -58,7 +58,8 @@
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      255
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME                25 // 2.5 seconds
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME           25 // 2.5 seconds
-
+#define DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT             75 // 75 degrees celsius
+#define DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT             85
 
 // *************************************************************************** //
 

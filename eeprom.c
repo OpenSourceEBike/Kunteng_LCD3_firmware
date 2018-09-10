@@ -58,7 +58,9 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME,
-    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME
+    DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME,
+    DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT,
+    DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT
   };
 
 static void eeprom_write_array (uint8_t *array);
@@ -85,32 +87,34 @@ void eeprom_init_variables (void)
 
   eeprom_read_values_to_variables ();
 
-  // now verify if any EEPROM saved value is out of valid range and if so,
-  // write correct ones and read again
-  if ((p_configuration_variables->ui8_number_of_assist_levels < 1) ||
-      (p_configuration_variables->ui8_number_of_assist_levels > 9) ||
-      (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
-      (p_configuration_variables->ui16_wheel_perimeter < 750) ||
-      (p_configuration_variables->ui8_wheel_max_speed > 99) ||
-      (p_configuration_variables->ui8_units_type > 1) ||
-      (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
-      (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
-      (p_configuration_variables->ui8_show_numeric_battery_soc > 1) ||
-      (p_configuration_variables->ui8_odometer_field_state > 4) ||
-      (p_configuration_variables->ui8_battery_max_current > 100) ||
-      (p_configuration_variables->ui8_target_max_battery_power_div10 > 195) ||
-      (p_configuration_variables->ui8_startup_motor_power_boost_state > 3) ||
-      (p_configuration_variables->ui8_battery_cells_number > 15) ||
-      (p_configuration_variables->ui8_battery_cells_number < 6) ||
-      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
-      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160) ||
-      (p_configuration_variables->ui8_cruise_control > 1) ||
-      (p_configuration_variables->ui8_motor_voltage_type > 1) ||
-      (p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation > 1))
-  {
-    eeprom_write_array (array_default_values);
-    eeprom_read_values_to_variables ();
-  }
+//  // now verify if any EEPROM saved value is out of valid range and if so,
+//  // write correct ones and read again
+//  if ((p_configuration_variables->ui8_number_of_assist_levels < 1) ||
+//      (p_configuration_variables->ui8_number_of_assist_levels > 9) ||
+//      (p_configuration_variables->ui16_wheel_perimeter > 3000) ||
+//      (p_configuration_variables->ui16_wheel_perimeter < 750) ||
+//      (p_configuration_variables->ui8_wheel_max_speed > 99) ||
+//      (p_configuration_variables->ui8_units_type > 1) ||
+//      (p_configuration_variables->ui32_wh_x10_offset > 99900) ||
+//      (p_configuration_variables->ui32_wh_x10_100_percent > 99900) ||
+//      (p_configuration_variables->ui8_show_numeric_battery_soc > 2) ||
+//      (p_configuration_variables->ui8_odometer_field_state > 4) ||
+//      (p_configuration_variables->ui8_battery_max_current > 100) ||
+//      (p_configuration_variables->ui8_target_max_battery_power_div10 > 195) ||
+//      (p_configuration_variables->ui8_startup_motor_power_boost_state > 3) ||
+//      (p_configuration_variables->ui8_battery_cells_number > 15) ||
+//      (p_configuration_variables->ui8_battery_cells_number < 6) ||
+//      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 > 630) ||
+//      (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 < 160) ||
+//      (p_configuration_variables->ui8_cruise_control > 1) ||
+//      (p_configuration_variables->ui8_motor_voltage_type > 1) ||
+//      (p_configuration_variables->ui8_motor_temperature_min_value_to_limit < 124) ||
+//      (p_configuration_variables->ui8_motor_temperature_max_value_to_limit < 124) ||
+//      (p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation > 1))
+//  {
+//    eeprom_write_array (array_default_values);
+//    eeprom_read_values_to_variables ();
+//  }
 }
 
 static void eeprom_read_values_to_variables (void)
@@ -167,6 +171,9 @@ static void eeprom_read_values_to_variables (void)
   ui8_temp = FLASH_ReadByte (ADDRESS_CONFIG_0);
   p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
   p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation = (ui8_temp & 2) >> 1;
+  p_configuration_variables->ui8_throttle_adc_measures_motor_temperature = (ui8_temp & 4) >> 2;
+  p_configuration_variables->ui8_motor_over_temperature_limit_current = (ui8_temp & 8) >> 3;
+  p_configuration_variables->ui8_temperature_field_config = (ui8_temp & 48) >> 4;
 
   p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
@@ -182,6 +189,9 @@ static void eeprom_read_values_to_variables (void)
   }
 
   p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
+
+  p_configuration_variables->ui8_motor_temperature_min_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT);
+  p_configuration_variables->ui8_motor_temperature_max_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT);
 }
 
 void eeprom_write_variables (void)
@@ -221,7 +231,11 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
   ui8_array [21] = p_configuration_variables->ui8_pas_max_cadence;
   ui8_array [22] = (p_configuration_variables->ui8_motor_voltage_type & 1) |
-                      ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1);
+                      ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1) |
+                      ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 2) |
+                      ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 3) |
+                      ((p_configuration_variables->ui8_temperature_field_config & 3) << 4);
+
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
     ui8_array [23 + ui8_index] = p_configuration_variables->ui8_assist_level_factors [ui8_index];
@@ -235,6 +249,8 @@ static void variables_to_array (uint8_t *ui8_array)
   }
   ui8_array [43] = p_configuration_variables->ui8_startup_motor_power_boost_time;
   ui8_array [44] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
+  ui8_array [45] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
+  ui8_array [46] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
 }
 
 static void eeprom_write_array (uint8_t *array)

@@ -16,7 +16,7 @@
 #include "utils.h"
 
 volatile uint8_t ui8_received_package_flag = 0;
-volatile uint8_t ui8_rx_buffer[21];
+volatile uint8_t ui8_rx_buffer[22];
 volatile uint8_t ui8_rx_counter = 0;
 volatile uint8_t ui8_tx_buffer[10];
 volatile uint8_t ui8_tx_counter = 0;
@@ -75,7 +75,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
       ui8_rx_counter++;
 
       // see if is the last byte of the package
-      if (ui8_rx_counter > 22)
+      if (ui8_rx_counter > 23)
       {
         ui8_rx_counter = 0;
         ui8_state_machine = 0;
@@ -100,12 +100,12 @@ void clock_uart_data (void)
     // validation of the package data
     // last byte is the checksum
     ui16_crc_rx = 0xffff;
-    for (ui8_i = 0; ui8_i <= 18; ui8_i++)
+    for (ui8_i = 0; ui8_i <= 19; ui8_i++)
     {
       crc16 (ui8_rx_buffer[ui8_i], &ui16_crc_rx);
     }
 
-    if (((((uint16_t) ui8_rx_buffer [20]) << 8) + ((uint16_t) ui8_rx_buffer [19])) == ui16_crc_rx)
+    if (((((uint16_t) ui8_rx_buffer [21]) << 8) + ((uint16_t) ui8_rx_buffer [20])) == ui16_crc_rx)
     {
       p_motor_controller_data = lcd_get_motor_controller_data ();
       p_configuration_variables = get_configuration_variables ();
@@ -117,8 +117,18 @@ void clock_uart_data (void)
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [6]) << 8) + ((uint16_t) ui8_rx_buffer [5]);
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[7];
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[8];
-      p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[9];
-      p_motor_controller_data->ui8_throttle = ui8_rx_buffer[10];
+
+      if (p_configuration_variables->ui8_throttle_adc_measures_motor_temperature)
+      {
+        p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[9];
+        p_motor_controller_data->ui8_motor_temperature = ui8_rx_buffer[10];
+      }
+      else
+      {
+        p_motor_controller_data->ui8_adc_throttle = ui8_rx_buffer[9];
+        p_motor_controller_data->ui8_throttle = ui8_rx_buffer[10];
+      }
+
       p_motor_controller_data->ui8_adc_pedal_torque_sensor = ui8_rx_buffer[11];
       p_motor_controller_data->ui8_pedal_torque_sensor = ui8_rx_buffer[12];
       p_motor_controller_data->ui8_pedal_cadence = ui8_rx_buffer[13];
@@ -126,6 +136,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui8_duty_cycle = ui8_rx_buffer[15];
       p_motor_controller_data->ui16_motor_speed_erps = (((uint16_t) ui8_rx_buffer [17]) << 8) + ((uint16_t) ui8_rx_buffer [16]);
       p_motor_controller_data->ui8_foc_angle = ui8_rx_buffer[18];
+      p_motor_controller_data->ui8_temperature_current_limiting_value = ui8_rx_buffer[19];
 
       // signal that we processed the full package
       ui8_received_package_flag = 0;
@@ -158,7 +169,7 @@ void clock_uart_data (void)
 
       // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
-#define VARIABLE_ID_MAX_NUMBER 6
+#define VARIABLE_ID_MAX_NUMBER 7
       if (ui8_last_package_id == ui8_lcd_variable_id)
       {
         ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
@@ -191,7 +202,9 @@ void clock_uart_data (void)
           // bit 2: MOTOR_ASSISTANCE_CAN_START_WITHOUT_PEDAL_ROTATION
           ui8_tx_buffer[6] = ((p_configuration_variables->ui8_cruise_control & 1) |
                              ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
-                              ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2));
+                              ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2) |
+                              ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 3) |
+                              ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 4));
           ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_state;
         break;
 
@@ -205,6 +218,12 @@ void clock_uart_data (void)
         case 5:
           // startup motor power boost fade time
           ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
+        break;
+
+        case 6:
+          // motor over temperature min and max values to limit
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
         break;
 
         default:

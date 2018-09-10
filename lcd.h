@@ -33,6 +33,8 @@ typedef struct _motor_controller_data
   uint8_t ui8_walk_assist_level;
   uint16_t ui16_motor_speed_erps;
   uint8_t ui8_foc_angle;
+  uint8_t ui8_temperature_current_limiting_value;
+  uint8_t ui8_motor_temperature;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
@@ -59,6 +61,12 @@ typedef struct _configuration_variables
   uint8_t ui8_startup_motor_power_boost_time;
   uint8_t ui8_startup_motor_power_boost_fade_time;
   uint8_t ui8_startup_motor_power_boost_assist_level_factors_x10 [9];
+  uint16_t ui16_adc_motor_temperature_10b;
+  uint8_t ui8_motor_over_temperature_limit_current;
+  uint8_t ui8_throttle_adc_measures_motor_temperature;
+  uint8_t ui8_motor_temperature_min_value_to_limit;
+  uint8_t ui8_motor_temperature_max_value_to_limit;
+  uint8_t ui8_temperature_field_config;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits
@@ -114,6 +122,7 @@ void lcd_enable_temperature_1_symbol (uint8_t ui8_state);
 void lcd_enable_kmh_symbol (uint8_t ui8_state);
 void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_enable_battery_symbols (uint8_t ui8_state);
+void lcd_enable_temperature_degrees_symbol (uint8_t ui8_state);
 void lcd_update (void);
 void lcd_clear (void);
 void lcd_set_frame_buffer (void);

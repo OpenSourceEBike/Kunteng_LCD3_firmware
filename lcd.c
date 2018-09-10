@@ -21,7 +21,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 7
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 8
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -88,12 +88,16 @@ static uint8_t lcd_backlight_intensity = 0;
 static uint8_t ui8_lcd_menu = 0;
 static uint8_t ui8_lcd_menu_config_submenu_state = 0;
 static uint8_t ui8_lcd_menu_flash_counter = 0;
+static uint16_t ui16_lcd_menu_flash_counter_temperature = 0;
 static uint8_t ui8_lcd_menu_flash_state;
+static uint8_t ui8_lcd_menu_flash_state_temperature;
 static uint8_t ui8_lcd_menu_config_submenu_number = 0;
 static uint8_t ui8_lcd_menu_config_submenu_active = 0;
 
 static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
+
+static uint16_t ui16_battery_soc_watts_hour;
 
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
@@ -107,6 +111,7 @@ void calc_wh (void);
 void assist_level_state (void);
 void brake (void);
 void odometer (void);
+void odometer_increase_field_state (void);
 void wheel_speed (void);
 void power (void);
 void power_off_management (void);
@@ -125,10 +130,13 @@ void lcd_execute_menu_config_submenu_battery (void);
 void lcd_execute_menu_config_submenu_battery_soc (void);
 void lcd_execute_menu_config_submenu_assist_level (void);
 void lcd_execute_menu_config_submenu_motor_startup_power_boost (void);
+void lcd_execute_menu_config_submenu_motor_temperature (void);
 void lcd_execute_menu_config_submenu_various (void);
 void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number);
+
+void calc_battery_soc_watts_hour (void);
 
 void clock_lcd (void)
 {
@@ -153,6 +161,8 @@ void clock_lcd (void)
     button_clear_events ();
     ui8_lcd_menu = 2;
   }
+
+  calc_battery_soc_watts_hour ();
 
   switch (ui8_lcd_menu)
   {
@@ -181,9 +191,9 @@ void clock_lcd (void)
 
 void lcd_execute_main_screen (void)
 {
+  temperature ();
   assist_level_state ();
   odometer ();
-  temperature ();
   wheel_speed ();
   walk_assist_state ();
   power ();
@@ -254,10 +264,14 @@ void lcd_execute_menu_config (void)
       break;
 
       case 5:
-        lcd_execute_menu_config_submenu_various ();
+        lcd_execute_menu_config_submenu_motor_temperature ();
       break;
 
       case 6:
+        lcd_execute_menu_config_submenu_various ();
+      break;
+
+      case 7:
         lcd_execute_menu_config_submenu_technical ();
       break;
 
@@ -564,8 +578,6 @@ void lcd_execute_menu_config_submenu_battery_soc (void)
 
 void lcd_execute_menu_config_submenu_assist_level (void)
 {
-  uint8_t ui8_temp;
-
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, (configuration_variables.ui8_number_of_assist_levels + 1));
 
   // number of assist levels: 0 to 9
@@ -721,11 +733,113 @@ void lcd_execute_menu_config_submenu_motor_startup_power_boost (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
+void lcd_execute_menu_config_submenu_motor_temperature (void)
+{
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 4);
+
+  switch (ui8_lcd_menu_config_submenu_state)
+  {
+    // motor temperature enable
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_throttle_adc_measures_motor_temperature = 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_throttle_adc_measures_motor_temperature = 0;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_throttle_adc_measures_motor_temperature, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // motor temperature limit current
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_motor_over_temperature_limit_current = 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_motor_over_temperature_limit_current = 0;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_motor_over_temperature_limit_current, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // motor temperature limit min
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_motor_temperature_min_value_to_limit < 110)
+        {
+          configuration_variables.ui8_motor_temperature_min_value_to_limit++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_motor_temperature_min_value_to_limit > 0)
+        {
+          configuration_variables.ui8_motor_temperature_min_value_to_limit--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_motor_temperature_min_value_to_limit, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // motor temperature limit max
+    case 3:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_motor_temperature_max_value_to_limit < 110)
+        {
+          configuration_variables.ui8_motor_temperature_max_value_to_limit++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_motor_temperature_max_value_to_limit > 0)
+        {
+          configuration_variables.ui8_motor_temperature_max_value_to_limit--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_motor_temperature_max_value_to_limit, ODOMETER_FIELD, 1);
+      }
+    break;
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+}
+
 void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
 
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 3);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 4);
 
   switch (ui8_lcd_menu_config_submenu_state)
   {
@@ -788,6 +902,32 @@ void lcd_execute_menu_config_submenu_various (void)
       if (ui8_lcd_menu_flash_state)
       {
         lcd_print (configuration_variables.ui8_pas_max_cadence, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // temperature field config
+    case 3:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_temperature_field_config <2)
+        {
+          configuration_variables.ui8_temperature_field_config++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_temperature_field_config > 0)
+        {
+          configuration_variables.ui8_temperature_field_config--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_temperature_field_config, ODOMETER_FIELD, 1);
       }
     break;
   }
@@ -939,32 +1079,18 @@ void power_off_management (void)
 
 void temperature (void)
 {
-  uint32_t ui32_temp;
-
-  if (configuration_variables.ui8_show_numeric_battery_soc & 1)
+  if ((configuration_variables.ui8_temperature_field_config == 1) &&
+      (configuration_variables.ui8_throttle_adc_measures_motor_temperature == 1))
   {
-    ui32_temp = ui32_wh_x10 * 100;
-    if (configuration_variables.ui32_wh_x10_100_percent > 0)
+    if (ui8_lcd_menu_flash_state_temperature)
     {
-      ui32_temp /= configuration_variables.ui32_wh_x10_100_percent;
+      lcd_print (motor_controller_data.ui8_motor_temperature, TEMPERATURE_FIELD, 0);
+      lcd_enable_temperature_degrees_symbol (1);
     }
-    else
-    {
-      ui32_temp = 0;
-    }
-
-    // show 100% - current SOC or just current SOC
-    if (configuration_variables.ui8_show_numeric_battery_soc & 2)
-    {
-      if (ui32_temp > 100)
-        ui32_temp = 100;
-
-      lcd_print (100 - ui32_temp, TEMPERATURE_FIELD, 0);
-    }
-    else
-    {
-      lcd_print (ui32_temp, TEMPERATURE_FIELD, 0);
-    }
+  }
+  else if (configuration_variables.ui8_temperature_field_config == 2)
+  {
+    lcd_print (ui16_battery_soc_watts_hour, TEMPERATURE_FIELD, 0);
   }
 }
 
@@ -1117,13 +1243,18 @@ void brake (void)
   else { lcd_enable_brake_symbol (0); }
 }
 
+void odometer_increase_field_state (void)
+{
+  configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 6;
+}
+
 void odometer (void)
 {
   // odometer values
   if (get_button_onoff_click_event ())
   {
     clear_button_onoff_click_event ();
-    configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 4;
+    odometer_increase_field_state ();
     // Commented on 2018.08.30 as this is creating issues to users because they don't how this offroad mode works.
     //configuration_variables.ui8_wheel_max_speed = 25; // Offroad-Mode disabled
   }
@@ -1139,19 +1270,40 @@ void odometer (void)
     // current value
     case 1:
       lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD, 0);
-      lcd_enable_vol_symbol (0);
     break;
 
     // Wh value
     case 2:
       lcd_print (ui32_wh_x10, ODOMETER_FIELD, 0);
-      lcd_enable_vol_symbol (0);
     break;
 
     // pedal cadence value
     case 3:
       lcd_print (motor_controller_data.ui8_pedal_cadence, ODOMETER_FIELD, 1);
-      lcd_enable_vol_symbol (0);
+    break;
+
+    // battery SOC in watts/hour
+    case 4:
+      if (configuration_variables.ui8_show_numeric_battery_soc & 1)
+      {
+        lcd_print (ui16_battery_soc_watts_hour, ODOMETER_FIELD, 1);
+      }
+      else
+      {
+        odometer_increase_field_state ();
+      }
+    break;
+
+    // motor temperature
+    case 5:
+      if (configuration_variables.ui8_throttle_adc_measures_motor_temperature)
+      {
+        lcd_print (motor_controller_data.ui8_motor_temperature, ODOMETER_FIELD, 1);
+      }
+      else
+      {
+        odometer_increase_field_state ();
+      }
     break;
 
     default:
@@ -1673,6 +1825,8 @@ void lcd_set_backlight_intensity (uint8_t ui8_intensity)
 
 void update_menu_flashing_state (void)
 {
+  // ***************************************************************************************************
+  // For flashing on menus, 0.5 seconds flash
   if (ui8_lcd_menu_flash_counter++ > 50)
   {
     ui8_lcd_menu_flash_counter = 0;
@@ -1682,6 +1836,55 @@ void update_menu_flashing_state (void)
     else
       ui8_lcd_menu_flash_state = 1;
   }
+  // ***************************************************************************************************
+
+  // ***************************************************************************************************
+  // For flashing the temperature field when the current is being limited due to motor over temperature
+  // flash only if current is being limited: ui8_temperature_current_limiting_value != 255
+  if (motor_controller_data.ui8_temperature_current_limiting_value != 255)
+  {
+    if (ui8_lcd_menu_flash_state_temperature == 0) // state 0: disabled
+    {
+      if (ui16_lcd_menu_flash_counter_temperature > 0)
+      {
+        ui16_lcd_menu_flash_counter_temperature--;
+      }
+
+      if (ui16_lcd_menu_flash_counter_temperature == 0)
+      {
+        // if motor_controller_data.ui8_temperature_current_limiting_value == 0, flash quicker meaning motor is shutoff
+        if (motor_controller_data.ui8_temperature_current_limiting_value > 0)
+        {
+          ui16_lcd_menu_flash_counter_temperature = 50 + ((uint16_t) motor_controller_data.ui8_temperature_current_limiting_value);
+        }
+        else
+        {
+          ui16_lcd_menu_flash_counter_temperature = 25;
+        }
+
+        ui8_lcd_menu_flash_state_temperature = 1;
+      }
+    }
+
+    if (ui8_lcd_menu_flash_state_temperature == 1) // state 1: enabled
+    {
+      if (ui16_lcd_menu_flash_counter_temperature > 0)
+      {
+        ui16_lcd_menu_flash_counter_temperature--;
+      }
+
+      if (ui16_lcd_menu_flash_counter_temperature == 0)
+      {
+        ui16_lcd_menu_flash_counter_temperature = 25; // 0.25 second
+        ui8_lcd_menu_flash_state_temperature = 0;
+      }
+    }
+  }
+  else
+  {
+    ui8_lcd_menu_flash_state_temperature = 1;
+  }
+  // ***************************************************************************************************
 }
 
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number)
@@ -1692,5 +1895,33 @@ void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number)
     clear_button_onoff_click_event ();
 
     *ui8_p_state = (*ui8_p_state + 1) % ui8_state_max_number;
+  }
+}
+
+void calc_battery_soc_watts_hour (void)
+{
+  uint32_t ui32_temp;
+
+  ui32_temp = ui32_wh_x10 * 100;
+  if (configuration_variables.ui32_wh_x10_100_percent > 0)
+  {
+    ui32_temp /= configuration_variables.ui32_wh_x10_100_percent;
+  }
+  else
+  {
+    ui32_temp = 0;
+  }
+
+  // 100% - current SOC or just current SOC
+  if (configuration_variables.ui8_show_numeric_battery_soc & 2)
+  {
+    if (ui32_temp > 100)
+      ui32_temp = 100;
+
+    ui16_battery_soc_watts_hour = 100 - ui32_temp;
+  }
+  else
+  {
+    ui16_battery_soc_watts_hour = ui32_temp;
   }
 }

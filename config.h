@@ -9,7 +9,6 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
 // Battery voltage (readed on LCD3):
 // 30.0V --> 447 | 0.0671 volts per each ADC unit
 // 40.0V --> 595 | 0.0672 volts per each ADC unit
