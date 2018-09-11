@@ -48,7 +48,7 @@ typedef struct _configuration_variables
   uint32_t ui32_wh_x10_100_percent;
   uint8_t ui8_show_numeric_battery_soc;
   uint8_t ui8_odometer_field_state;
-  uint8_t ui8_target_max_battery_power_div10;
+  uint8_t ui8_target_max_battery_power;
   uint8_t ui8_battery_cells_number;
   uint8_t ui8_battery_max_current;
   uint16_t ui16_battery_low_voltage_cut_off_x10;
@@ -56,11 +56,11 @@ typedef struct _configuration_variables
   uint8_t ui8_motor_assistance_startup_without_pedal_rotation;
   uint8_t ui8_pas_max_cadence;
   uint8_t ui8_cruise_control;
-  uint8_t ui8_assist_level_factors [9];
+  uint8_t ui8_assist_level_power [9];
   uint8_t ui8_startup_motor_power_boost_state;
   uint8_t ui8_startup_motor_power_boost_time;
   uint8_t ui8_startup_motor_power_boost_fade_time;
-  uint8_t ui8_startup_motor_power_boost_assist_level_factors_x10 [9];
+  uint8_t ui8_startup_motor_power_boost [9];
   uint16_t ui16_adc_motor_temperature_10b;
   uint8_t ui8_motor_over_temperature_limit_current;
   uint8_t ui8_throttle_adc_measures_motor_temperature;

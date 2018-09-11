@@ -606,18 +606,18 @@ void lcd_execute_menu_config_submenu_assist_level (void)
     if (get_button_up_click_event ())
     {
       clear_button_up_click_event ();
-      configuration_variables.ui8_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)]++;
+      configuration_variables.ui8_assist_level_power [(ui8_lcd_menu_config_submenu_state - 1)]++;
     }
 
     if (get_button_down_click_event ())
     {
       clear_button_down_click_event ();
-      configuration_variables.ui8_assist_level_factors [(ui8_lcd_menu_config_submenu_state - 1)]--;
+      configuration_variables.ui8_assist_level_power [(ui8_lcd_menu_config_submenu_state - 1)]--;
     }
 
     if (ui8_lcd_menu_flash_state)
     {
-      lcd_print (configuration_variables.ui8_assist_level_factors [ui8_lcd_menu_config_submenu_state - 1], ODOMETER_FIELD, 0);
+      lcd_print (configuration_variables.ui8_assist_level_power [ui8_lcd_menu_config_submenu_state - 1] * 25, ODOMETER_FIELD, 1);
     }
   }
 
@@ -628,7 +628,7 @@ void lcd_execute_menu_config_submenu_motor_startup_power_boost (void)
 {
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, (configuration_variables.ui8_number_of_assist_levels + 4));
 
-  // enable or disable; other states
+  // enable or disable
   if (ui8_lcd_menu_config_submenu_state == 0)
   {
     if (get_button_up_click_event ())
@@ -648,7 +648,7 @@ void lcd_execute_menu_config_submenu_motor_startup_power_boost (void)
       lcd_print ((configuration_variables.ui8_startup_motor_power_boost_state & 1) ? 1: 0, ODOMETER_FIELD, 1);
     }
   }
-  // enable or disable: limit to max power
+  // limit to max power
   else if (ui8_lcd_menu_config_submenu_state == 1)
   {
     if (get_button_up_click_event ())
@@ -715,18 +715,18 @@ void lcd_execute_menu_config_submenu_motor_startup_power_boost (void)
     {
       clear_button_up_click_event ();
       // the BATTERY_POWER_FIELD can't show higher value
-      configuration_variables.ui8_startup_motor_power_boost_assist_level_factors_x10 [(ui8_lcd_menu_config_submenu_state - 4)]++;
+      configuration_variables.ui8_startup_motor_power_boost [(ui8_lcd_menu_config_submenu_state - 4)]++;
     }
 
     if (get_button_down_click_event ())
     {
       clear_button_down_click_event ();
-      configuration_variables.ui8_startup_motor_power_boost_assist_level_factors_x10 [(ui8_lcd_menu_config_submenu_state - 4)]--;
+      configuration_variables.ui8_startup_motor_power_boost [(ui8_lcd_menu_config_submenu_state - 4)]--;
     }
 
     if (ui8_lcd_menu_flash_state)
     {
-      lcd_print (configuration_variables.ui8_startup_motor_power_boost_assist_level_factors_x10 [ui8_lcd_menu_config_submenu_state - 4], ODOMETER_FIELD, 0);
+      lcd_print (configuration_variables.ui8_startup_motor_power_boost [ui8_lcd_menu_config_submenu_state - 4] * 25, ODOMETER_FIELD, 1);
     }
   }
 
@@ -1012,21 +1012,40 @@ void lcd_execute_menu_config_power (void)
   {
     button_clear_events ();
 
-    configuration_variables.ui8_target_max_battery_power_div10 += 5;
+    if (configuration_variables.ui8_target_max_battery_power < 10)
+    {
+      configuration_variables.ui8_target_max_battery_power++;
+    }
+    else
+    {
+      configuration_variables.ui8_target_max_battery_power += 2;
+    }
+
     // the BATTERY_POWER_FIELD can't show higher value
-    if (configuration_variables.ui8_target_max_battery_power_div10 > 195) { configuration_variables.ui8_target_max_battery_power_div10 = 195; }
+    if (configuration_variables.ui8_target_max_battery_power > 190) { configuration_variables.ui8_target_max_battery_power = 190; }
   }
 
   if (get_button_down_click_event ())
   {
     button_clear_events ();
 
-    if (configuration_variables.ui8_target_max_battery_power_div10 > 5) { configuration_variables.ui8_target_max_battery_power_div10 -= 5; }
+    if (configuration_variables.ui8_target_max_battery_power == 0)
+    {
+
+    }
+    else if (configuration_variables.ui8_target_max_battery_power <= 10)
+    {
+      configuration_variables.ui8_target_max_battery_power--;
+    }
+    else
+    {
+      configuration_variables.ui8_target_max_battery_power -= 2;
+    }
   }
 
   if (ui8_lcd_menu_flash_state)
   {
-    lcd_print (configuration_variables.ui8_target_max_battery_power_div10 * 10, BATTERY_POWER_FIELD, 0);
+    lcd_print (configuration_variables.ui8_target_max_battery_power * 25, BATTERY_POWER_FIELD, 0);
   }
 }
 

@@ -158,7 +158,7 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_show_numeric_battery_soc = FLASH_ReadByte (ADDRESS_SHOW_NUMERIC_BATTERY_SOC);
   p_configuration_variables->ui8_odometer_field_state = FLASH_ReadByte (ADDRESS_ODOMETER_FIELD_STATE);
   p_configuration_variables->ui8_battery_max_current = FLASH_ReadByte (ADDRESS_BATTERY_MAX_CURRENT);
-  p_configuration_variables->ui8_target_max_battery_power_div10 = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
+  p_configuration_variables->ui8_target_max_battery_power = FLASH_ReadByte (ADDRESS_TARGET_MAX_BATTERY_POWER);
   p_configuration_variables->ui8_battery_cells_number = FLASH_ReadByte (ADDRESS_BATTERY_CELLS_NUMBER);
 
   ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_LOW_VOLTAGE_CUT_OFF_X10_0);
@@ -178,14 +178,14 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    p_configuration_variables->ui8_assist_level_factors [ui8_index] = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL_FACTOR_1 + ui8_index);
+    p_configuration_variables->ui8_assist_level_power [ui8_index] = FLASH_ReadByte (ADDRESS_ASSIST_LEVEL_FACTOR_1 + ui8_index);
   }
 
   p_configuration_variables->ui8_startup_motor_power_boost_state = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE);
   p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
+    p_configuration_variables->ui8_startup_motor_power_boost [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
   }
 
   p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
@@ -225,7 +225,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [14] = p_configuration_variables->ui8_show_numeric_battery_soc;
   ui8_array [15] = p_configuration_variables->ui8_odometer_field_state;
   ui8_array [16] = p_configuration_variables->ui8_battery_max_current;
-  ui8_array [17] = p_configuration_variables->ui8_target_max_battery_power_div10;
+  ui8_array [17] = p_configuration_variables->ui8_target_max_battery_power;
   ui8_array [18] = p_configuration_variables->ui8_battery_cells_number;
   ui8_array [19] = p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 & 255;
   ui8_array [20] = (p_configuration_variables->ui16_battery_low_voltage_cut_off_x10 >> 8) & 255;
@@ -238,14 +238,14 @@ static void variables_to_array (uint8_t *ui8_array)
 
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    ui8_array [23 + ui8_index] = p_configuration_variables->ui8_assist_level_factors [ui8_index];
+    ui8_array [23 + ui8_index] = p_configuration_variables->ui8_assist_level_power [ui8_index];
   }
   ui8_array [32] = p_configuration_variables->ui8_number_of_assist_levels;
 
   ui8_array [33] = p_configuration_variables->ui8_startup_motor_power_boost_state;
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    ui8_array [34 + ui8_index] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [ui8_index];
+    ui8_array [34 + ui8_index] = p_configuration_variables->ui8_startup_motor_power_boost [ui8_index];
   }
   ui8_array [43] = p_configuration_variables->ui8_startup_motor_power_boost_time;
   ui8_array [44] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;

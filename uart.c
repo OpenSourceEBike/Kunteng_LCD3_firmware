@@ -148,7 +148,7 @@ void clock_uart_data (void)
       // set assist level value
       if (p_configuration_variables->ui8_assist_level)
       {
-        ui8_tx_buffer[1] = p_configuration_variables->ui8_assist_level_factors [((p_configuration_variables->ui8_assist_level) - 1)];
+        ui8_tx_buffer[1] = p_configuration_variables->ui8_assist_level_power [((p_configuration_variables->ui8_assist_level) - 1)];
       }
       else
       {
@@ -165,7 +165,7 @@ void clock_uart_data (void)
       ui8_tx_buffer[3] = p_configuration_variables->ui8_battery_max_current;
 
       // motor power in 10 watts unit
-      ui8_tx_buffer[4] = p_configuration_variables->ui8_target_max_battery_power_div10;
+      ui8_tx_buffer[4] = p_configuration_variables->ui8_target_max_battery_power;
 
       // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
@@ -210,7 +210,7 @@ void clock_uart_data (void)
 
         case 4:
           // startup motor power boost
-          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost_assist_level_factors_x10 [((p_configuration_variables->ui8_assist_level) - 1)];
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_startup_motor_power_boost [((p_configuration_variables->ui8_assist_level) - 1)];
           // startup motor power boost time
           ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_time;
         break;
