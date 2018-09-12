@@ -459,7 +459,7 @@ void lcd_execute_menu_config_submenu_battery_soc (void)
 {
   uint8_t ui8_temp;
 
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 4);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 5);
 
   switch (ui8_lcd_menu_config_submenu_state)
   {
@@ -505,8 +505,28 @@ void lcd_execute_menu_config_submenu_battery_soc (void)
       }
     break;
 
-    // menu to choose watts hour value to be equal to 100% of battery SOC
+    // battery_voltage_reset_wh_counter
     case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui16_battery_voltage_reset_wh_counter_x10 < 630) { configuration_variables.ui16_battery_voltage_reset_wh_counter_x10++; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui16_battery_voltage_reset_wh_counter_x10 > 161) { configuration_variables.ui16_battery_voltage_reset_wh_counter_x10--; }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui16_battery_voltage_reset_wh_counter_x10, ODOMETER_FIELD, 0);
+      }
+    break;
+
+    // menu to choose watts hour value to be equal to 100% of battery SOC
+    case 3:
       if (get_button_up_click_event ())
       {
         button_clear_events ();
@@ -531,7 +551,7 @@ void lcd_execute_menu_config_submenu_battery_soc (void)
     break;
 
     // menu to set current watts hour value
-    case 3:
+    case 4:
       // on the very first time, use current value of ui32_wh_x10
       if (ui8_config_wh_x10_offset)
       {
@@ -1064,9 +1084,9 @@ uint8_t first_time_management (void)
   {
     ui8_motor_controller_init = 0;
 
-    // reset Wh value if battery is over battery_cells * 4.1V (when battery is near fully charged)
+    // reset Wh value if battery voltage is over ui16_battery_voltage_reset_wh_counter_x10 (value configured by user)
     if (((uint32_t) motor_controller_data.ui16_adc_battery_voltage *
-        ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > ((uint32_t) configuration_variables.ui8_battery_cells_number * 41000))
+        ADC_BATTERY_VOLTAGE_PER_ADC_STEP_X10000) > ((uint32_t) configuration_variables.ui16_battery_voltage_reset_wh_counter_x10 * 1000))
     {
       configuration_variables.ui32_wh_x10_offset = 0;
     }

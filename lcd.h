@@ -52,6 +52,8 @@ typedef struct _configuration_variables
   uint8_t ui8_battery_cells_number;
   uint8_t ui8_battery_max_current;
   uint16_t ui16_battery_low_voltage_cut_off_x10;
+  uint16_t ui16_battery_voltage_reset_wh_counter_x10;
+  uint16_t ui16_battery_pack_resistance;
   uint8_t ui8_motor_voltage_type;
   uint8_t ui8_motor_assistance_startup_without_pedal_rotation;
   uint8_t ui8_pas_max_cadence;
@@ -67,6 +69,9 @@ typedef struct _configuration_variables
   uint8_t ui8_motor_temperature_min_value_to_limit;
   uint8_t ui8_motor_temperature_max_value_to_limit;
   uint8_t ui8_temperature_field_config;
+  uint8_t ui8_lcd_power_off_time;
+  uint8_t ui8_lcd_backlight_on_brightness;
+  uint8_t ui8_lcd_backlight_off_brightness;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

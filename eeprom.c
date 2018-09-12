@@ -60,7 +60,14 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME,
     DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT,
-    DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT
+    DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT,
+    DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0,
+    DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1,
+    DEFAULT_VALUE_LCD_POWER_OFF_TIME,
+    DEFAULT_VALUE_LCD_BACKLIGHT_ON_BRIGHTNESS,
+    DEFAULT_VALUE_LCD_BACKLIGHT_OFF_BRIGHTNESS,
+    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_0,
+    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1
   };
 
 static void eeprom_write_array (uint8_t *array);
@@ -182,16 +189,30 @@ static void eeprom_read_values_to_variables (void)
   }
 
   p_configuration_variables->ui8_startup_motor_power_boost_state = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE);
-  p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME);
+  p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_TIME);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    p_configuration_variables->ui8_startup_motor_power_boost [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
+    p_configuration_variables->ui8_startup_motor_power_boost [ui8_index] = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
   }
 
-  p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
+  p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
 
-  p_configuration_variables->ui8_motor_temperature_min_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT);
-  p_configuration_variables->ui8_motor_temperature_max_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT);
+  p_configuration_variables->ui8_motor_temperature_min_value_to_limit = FLASH_ReadByte (ADDRESS_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT);
+  p_configuration_variables->ui8_motor_temperature_max_value_to_limit = FLASH_ReadByte (ADDRESS_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT);
+
+  ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1);
+  ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+  p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 = ui16_temp;
+
+  p_configuration_variables->ui8_lcd_power_off_time = FLASH_ReadByte (ADDRESS_LCD_POWER_OFF_TIME);
+  p_configuration_variables->ui8_lcd_backlight_on_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_ON_BRIGHTNESS);
+  p_configuration_variables->ui8_lcd_backlight_off_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_OFF_BRIGHTNESS);
+
+  ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_1);
+  ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+  p_configuration_variables->ui16_battery_pack_resistance = ui16_temp;
 }
 
 void eeprom_write_variables (void)
@@ -251,6 +272,16 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [44] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
   ui8_array [45] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
   ui8_array [46] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
+
+  ui8_array [47] = p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 & 255;
+  ui8_array [48] = (p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 >> 8) & 255;
+
+  ui8_array [49] = p_configuration_variables->ui8_lcd_power_off_time;
+  ui8_array [50] = p_configuration_variables->ui8_lcd_backlight_on_brightness;
+  ui8_array [51] = p_configuration_variables->ui8_lcd_backlight_off_brightness;
+
+  ui8_array [52] = p_configuration_variables->ui16_battery_pack_resistance & 255;
+  ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance >> 8) & 255;
 }
 
 static void eeprom_write_array (uint8_t *array)

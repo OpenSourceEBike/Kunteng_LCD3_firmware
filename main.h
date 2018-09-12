@@ -60,6 +60,13 @@
 #define DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME           25 // 2.5 seconds
 #define DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT             75 // 75 degrees celsius
 #define DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT             85
+#define DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0        30 // 48v battery, 54.2 volts fully charged = 54.2: (30 + (2 << 8))
+#define DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1        2
+#define DEFAULT_VALUE_LCD_POWER_OFF_TIME                            15 // 15 minutes, each unit 1 minute
+#define DEFAULT_VALUE_LCD_BACKLIGHT_ON_BRIGHTNESS                   10 // 10 = 100%
+#define DEFAULT_VALUE_LCD_BACKLIGHT_OFF_BRIGHTNESS                  2 // 2 = 20%
+#define DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_0                     130 // 48v battery, 13S5P measured 130 milli ohms
+#define DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1                     0
 
 // *************************************************************************** //
 
