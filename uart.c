@@ -156,10 +156,9 @@ void clock_uart_data (void)
       }
 
       // set lights state
-      if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[2] |= 0x01;
-
       // walk assist level state
-      if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[2] |= 0x02;
+      ui8_tx_buffer[2] = (p_motor_controller_data->ui8_lights & 1) |
+          ((p_motor_controller_data->ui8_walk_assist_level & 1) << 1);
 
       // battery max current in amps
       ui8_tx_buffer[3] = p_configuration_variables->ui8_battery_max_current;
