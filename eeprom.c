@@ -212,7 +212,7 @@ static void eeprom_read_values_to_variables (void)
   ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_0);
   ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_1);
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
-  p_configuration_variables->ui16_battery_pack_resistance = ui16_temp;
+  p_configuration_variables->ui16_battery_pack_resistance_x1000 = ui16_temp;
 }
 
 void eeprom_write_variables (void)
@@ -280,8 +280,8 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [50] = p_configuration_variables->ui8_lcd_backlight_on_brightness;
   ui8_array [51] = p_configuration_variables->ui8_lcd_backlight_off_brightness;
 
-  ui8_array [52] = p_configuration_variables->ui16_battery_pack_resistance & 255;
-  ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance >> 8) & 255;
+  ui8_array [52] = p_configuration_variables->ui16_battery_pack_resistance_x1000 & 255;
+  ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance_x1000 >> 8) & 255;
 }
 
 static void eeprom_write_array (uint8_t *array, uint8_t ui8_len)
