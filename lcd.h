@@ -28,6 +28,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_error_code;
   uint16_t ui16_wheel_speed_x10;
   uint8_t ui8_motor_controller_state_2;
+  uint8_t ui8_braking;
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
   uint8_t ui8_walk_assist_level;

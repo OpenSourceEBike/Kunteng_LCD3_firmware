@@ -116,6 +116,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[4];
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [6]) << 8) + ((uint16_t) ui8_rx_buffer [5]);
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_braking = p_motor_controller_data->ui8_motor_controller_state_2 & 1;
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[8];
 
       if (p_configuration_variables->ui8_throttle_adc_measures_motor_temperature)

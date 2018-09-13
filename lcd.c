@@ -1406,7 +1406,7 @@ void walk_assist_state (void)
 
 void brake (void)
 {
-  if (motor_controller_data.ui8_motor_controller_state_2 & 1) { lcd_enable_brake_symbol (1); }
+  if (motor_controller_data.ui8_braking) { lcd_enable_brake_symbol (1); }
   else { lcd_enable_brake_symbol (0); }
 }
 
@@ -1969,6 +1969,7 @@ static void automatic_power_off_management (void)
     // see if we should reset the automatic power off minutes counter
     if ((motor_controller_data.ui16_wheel_speed_x10 > 0) ||   // wheel speed > 0
         (motor_controller_data.ui8_battery_current_x5 > 0) || // battery current > 0
+        (motor_controller_data.ui8_braking) ||                // braking
         button_get_events ())                                 // any button active
     {
       ui16_lcd_power_off_time_counter = 0;
