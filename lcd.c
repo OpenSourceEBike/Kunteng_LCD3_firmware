@@ -101,6 +101,9 @@ static uint16_t ui16_battery_soc_watts_hour;
 
 static uint8_t ui8_reset_to_defaults_counter;
 
+uint8_t ui8_lcd_power_off_time_counter_minutes = 0;
+static uint16_t ui16_lcd_power_off_time_counter = 0;
+
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
 void lcd_enable_lights_symbol (uint8_t ui8_state);
@@ -138,8 +141,24 @@ void lcd_execute_menu_config_submenu_various (void);
 void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
 void advance_on_submenu (uint8_t* ui8_p_state, uint8_t ui8_state_max_number);
-
 void calc_battery_soc_watts_hour (void);
+static void automatic_power_off_management (void);
+void lcd_power_off (void);
+void lcd_enable_vol_symbol (uint8_t ui8_state);
+void lcd_enable_w_symbol (uint8_t ui8_state);
+void lcd_enable_odometer_point_symbol (uint8_t ui8_state);
+void lcd_enable_brake_symbol (uint8_t ui8_state);
+void lcd_enable_assist_symbol (uint8_t ui8_state);
+void lcd_enable_battery_power_1_symbol (uint8_t ui8_state);
+void lcd_enable_temperature_1_symbol (uint8_t ui8_state);
+void lcd_enable_kmh_symbol (uint8_t ui8_state);
+void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
+void lcd_enable_temperature_degrees_symbol (uint8_t ui8_state);
+void lcd_update (void);
+void lcd_clear (void);
+void lcd_set_frame_buffer (void);
+void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options);
+
 
 void clock_lcd (void)
 {
@@ -185,6 +204,7 @@ void clock_lcd (void)
   low_pass_filter_battery_voltage_current_power ();
   low_pass_filter_pedal_torque ();
   calc_wh ();
+  automatic_power_off_management ();
 
   lcd_update ();
 
@@ -929,18 +949,18 @@ void lcd_execute_menu_config_submenu_lcd (void)
       if (get_button_up_click_event ())
       {
         clear_button_up_click_event ();
-        configuration_variables.ui8_lcd_power_off_time++;
+        configuration_variables.ui8_lcd_power_off_time_minutes++;
       }
 
       if (get_button_down_click_event ())
       {
         clear_button_down_click_event ();
-        configuration_variables.ui8_lcd_power_off_time--;
+        configuration_variables.ui8_lcd_power_off_time_minutes--;
       }
 
       if (ui8_lcd_menu_flash_state)
       {
-        lcd_print (configuration_variables.ui8_lcd_power_off_time, ODOMETER_FIELD, 1);
+        lcd_print (configuration_variables.ui8_lcd_power_off_time_minutes, ODOMETER_FIELD, 1);
       }
     break;
 
@@ -1222,22 +1242,7 @@ uint8_t first_time_management (void)
 void power_off_management (void)
 {
   // turn off
-  if (get_button_onoff_long_click_event ())
-  {
-    // save values to EEPROM
-    configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
-    eeprom_write_variables ();
-
-    // clear LCD so it is clear to user what is happening
-    lcd_clear ();
-    lcd_update ();
-
-    // now disable the power to all the system
-    GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
-
-    // block here
-    while (1) ;
-  }
+  if (get_button_onoff_long_click_event ()) { lcd_power_off (); }
 }
 
 void temperature (void)
@@ -1957,6 +1962,41 @@ void calc_wh (void)
   }
 }
 
+static void automatic_power_off_management (void)
+{
+  if (configuration_variables.ui8_lcd_power_off_time_minutes != 0)
+  {
+    // see if we should reset the automatic power off minutes counter
+    if ((motor_controller_data.ui16_wheel_speed_x10 > 0) ||   // wheel speed > 0
+        (motor_controller_data.ui8_battery_current_x5 > 0) || // battery current > 0
+        button_get_events ())                                 // any button active
+    {
+      ui16_lcd_power_off_time_counter = 0;
+      ui8_lcd_power_off_time_counter_minutes = 0;
+    }
+
+    // increment the automatic power off minutes counter
+    ui16_lcd_power_off_time_counter++;
+
+    // check if we should power off the LCD
+    if (ui16_lcd_power_off_time_counter >= (100 * 60)) // 1 minute passed
+    {
+      ui16_lcd_power_off_time_counter = 0;
+
+      ui8_lcd_power_off_time_counter_minutes++;
+      if (ui8_lcd_power_off_time_counter_minutes >= configuration_variables.ui8_lcd_power_off_time_minutes)
+      {
+        lcd_power_off ();
+      }
+    }
+  }
+  else
+  {
+    ui16_lcd_power_off_time_counter = 0;
+    ui8_lcd_power_off_time_counter_minutes = 0;
+  }
+}
+
 struct_configuration_variables* get_configuration_variables (void)
 {
   return &configuration_variables;
@@ -2092,3 +2132,21 @@ void calc_battery_soc_watts_hour (void)
     ui16_battery_soc_watts_hour = ui32_temp;
   }
 }
+
+void lcd_power_off (void)
+{
+  // save values to EEPROM
+  configuration_variables.ui32_wh_x10_offset = ui32_wh_x10;
+  eeprom_write_variables ();
+
+  // clear LCD so it is clear to user what is happening
+  lcd_clear ();
+  lcd_update ();
+
+  // now disable the power to all the system
+  GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+
+  // block here
+  while (1) ;
+}
+

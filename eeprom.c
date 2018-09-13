@@ -205,7 +205,7 @@ static void eeprom_read_values_to_variables (void)
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
   p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 = ui16_temp;
 
-  p_configuration_variables->ui8_lcd_power_off_time = FLASH_ReadByte (ADDRESS_LCD_POWER_OFF_TIME);
+  p_configuration_variables->ui8_lcd_power_off_time_minutes = FLASH_ReadByte (ADDRESS_LCD_POWER_OFF_TIME);
   p_configuration_variables->ui8_lcd_backlight_on_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_ON_BRIGHTNESS);
   p_configuration_variables->ui8_lcd_backlight_off_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_OFF_BRIGHTNESS);
 
@@ -276,7 +276,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [47] = p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 & 255;
   ui8_array [48] = (p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 >> 8) & 255;
 
-  ui8_array [49] = p_configuration_variables->ui8_lcd_power_off_time;
+  ui8_array [49] = p_configuration_variables->ui8_lcd_power_off_time_minutes;
   ui8_array [50] = p_configuration_variables->ui8_lcd_backlight_on_brightness;
   ui8_array [51] = p_configuration_variables->ui8_lcd_backlight_off_brightness;
 
