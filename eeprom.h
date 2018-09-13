@@ -73,5 +73,6 @@
 void eeprom_init (void);
 void eeprom_init_variables (void);
 void eeprom_write_variables (void);
+void eeprom_erase_key_value (void);
 
 #endif /* _EEPROM_H_ */

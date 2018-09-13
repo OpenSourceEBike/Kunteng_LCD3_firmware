@@ -70,7 +70,7 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1
   };
 
-static void eeprom_write_array (uint8_t *array);
+static void eeprom_write_array (uint8_t *array, uint8_t ui8_len);
 static void eeprom_read_values_to_variables (void);
 static void variables_to_array (uint8_t *ui8_array);
 
@@ -83,7 +83,7 @@ void eeprom_init (void)
   ui8_data = FLASH_ReadByte (ADDRESS_KEY);
   if (ui8_data != KEY) // verify if our key exist
   {
-    eeprom_write_array (array_default_values);
+    eeprom_write_array (array_default_values, ((uint32_t) EEPROM_BYTES_STORED));
   }
 }
 
@@ -219,7 +219,7 @@ void eeprom_write_variables (void)
 {
   uint8_t array_variables [EEPROM_BYTES_STORED];
   variables_to_array (array_variables);
-  eeprom_write_array (array_variables);
+  eeprom_write_array (array_variables, ((uint8_t) EEPROM_BYTES_STORED));
 }
 
 static void variables_to_array (uint8_t *ui8_array)
@@ -284,7 +284,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance >> 8) & 255;
 }
 
-static void eeprom_write_array (uint8_t *array)
+static void eeprom_write_array (uint8_t *array, uint8_t ui8_len)
 {
   uint8_t ui8_i;
 
@@ -293,10 +293,16 @@ static void eeprom_write_array (uint8_t *array)
     FLASH_Unlock (FLASH_MEMTYPE_DATA);
   }
 
-  for (ui8_i = 0; ui8_i < EEPROM_BYTES_STORED; ui8_i++)
+  for (ui8_i = 0; ui8_i < ui8_len; ui8_i++)
   {
-    FLASH_ProgramByte (EEPROM_BASE_ADDRESS + ui8_i, *array++);
+    FLASH_ProgramByte (((uint32_t) EEPROM_BASE_ADDRESS) + ((uint32_t) ui8_i), *array++);
   }
 
   FLASH_Lock (FLASH_MEMTYPE_DATA);
+}
+
+void eeprom_erase_key_value (void)
+{
+  uint8_t array_variables [1] = { 0 }; // key value is the first element, let's keep at 0
+  eeprom_write_array (array_variables, 1);
 }

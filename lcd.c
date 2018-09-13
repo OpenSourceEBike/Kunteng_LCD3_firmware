@@ -9,6 +9,7 @@
 #include <string.h>
 #include "stm8s.h"
 #include "stm8s_gpio.h"
+#include "stm8s_iwdg.h"
 #include "gpio.h"
 #include "timers.h"
 #include "ht162.h"
@@ -98,6 +99,8 @@ static struct_motor_controller_data motor_controller_data;
 static struct_configuration_variables configuration_variables;
 
 static uint16_t ui16_battery_soc_watts_hour;
+
+static uint8_t ui8_reset_to_defaults_counter;
 
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
@@ -859,7 +862,7 @@ void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
 
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 4);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 5);
 
   switch (ui8_lcd_menu_config_submenu_state)
   {
@@ -930,7 +933,7 @@ void lcd_execute_menu_config_submenu_various (void)
       if (get_button_up_click_event ())
       {
         clear_button_up_click_event ();
-        if (configuration_variables.ui8_temperature_field_config <2)
+        if (configuration_variables.ui8_temperature_field_config < 2)
         {
           configuration_variables.ui8_temperature_field_config++;
         }
@@ -950,6 +953,37 @@ void lcd_execute_menu_config_submenu_various (void)
         lcd_print (configuration_variables.ui8_temperature_field_config, ODOMETER_FIELD, 1);
       }
     break;
+
+  // reset to defaults
+  case 4:
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+
+      ui8_reset_to_defaults_counter++;
+      if (ui8_reset_to_defaults_counter > 9)
+      {
+        eeprom_erase_key_value ();
+        // disables the power of LCD
+        GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+      }
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      if (ui8_reset_to_defaults_counter > 0)
+      {
+        ui8_reset_to_defaults_counter--;
+      }
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
+    }
+  break;
+
   }
 
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
