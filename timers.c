@@ -36,12 +36,10 @@ void timer1_init (void)
 {
   uint16_t ui16_i;
 
-  // Timer2 clock = 16MHz;
-  // counter period = (1 / (16000000 / 16384)) * (9 + 1) = 10ms = 100Hz
-  TIM1_TimeBaseInit(16000, TIM1_COUNTERMODE_UP, 9, 0);
+  // counter period = (1 / (16000000 / 4200)) * (20 + 1) = 5ms = 100Hz
+  TIM1_TimeBaseInit(4200, TIM1_COUNTERMODE_DOWN, 20, 0);
 
   TIM1_OC4Init(TIM1_OCMODE_PWM1, TIM1_OUTPUTSTATE_ENABLE, 0, TIM1_OCPOLARITY_HIGH, TIM1_OCIDLESTATE_RESET);
-  TIM1_OC4PreloadConfig(ENABLE);
   TIM1_ARRPreloadConfig(ENABLE);
   TIM1_Cmd(ENABLE);
   TIM1_CtrlPWMOutputs(ENABLE);

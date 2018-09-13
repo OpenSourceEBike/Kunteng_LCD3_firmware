@@ -11,7 +11,7 @@
 
 #include "lcd.h"
 
-#define KEY                                                                 0xe0
+#define KEY                                                                 0xe2
 
 #define EEPROM_BASE_ADDRESS 			                                          0x4000
 #define ADDRESS_KEY 				                                                0 + EEPROM_BASE_ADDRESS

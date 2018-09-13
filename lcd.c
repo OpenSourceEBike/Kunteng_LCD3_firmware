@@ -22,7 +22,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 8
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 9
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -84,7 +84,6 @@ static uint8_t ui8_motor_controller_init = 1;
 
 static uint8_t ui8_lights_state = 0;
 static uint8_t lcd_lights_symbol = 0;
-static uint8_t lcd_backlight_intensity = 0;
 
 static uint8_t ui8_lcd_menu = 0;
 static uint8_t ui8_lcd_menu_config_submenu_state = 0;
@@ -134,6 +133,7 @@ void lcd_execute_menu_config_submenu_battery_soc (void);
 void lcd_execute_menu_config_submenu_assist_level (void);
 void lcd_execute_menu_config_submenu_motor_startup_power_boost (void);
 void lcd_execute_menu_config_submenu_motor_temperature (void);
+void lcd_execute_menu_config_submenu_lcd ();
 void lcd_execute_menu_config_submenu_various (void);
 void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
@@ -271,10 +271,14 @@ void lcd_execute_menu_config (void)
       break;
 
       case 6:
-        lcd_execute_menu_config_submenu_various ();
+        lcd_execute_menu_config_submenu_lcd ();
       break;
 
       case 7:
+        lcd_execute_menu_config_submenu_various ();
+      break;
+
+      case 8:
         lcd_execute_menu_config_submenu_technical ();
       break;
 
@@ -858,11 +862,154 @@ void lcd_execute_menu_config_submenu_motor_temperature (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
-void lcd_execute_menu_config_submenu_various (void)
+void lcd_execute_menu_config_submenu_lcd (void)
 {
   uint8_t ui8_temp;
 
   advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 5);
+
+  switch (ui8_lcd_menu_config_submenu_state)
+  {
+    // backlight off brightness
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_lcd_backlight_off_brightness < 20)
+        {
+          configuration_variables.ui8_lcd_backlight_off_brightness++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_lcd_backlight_off_brightness > 0)
+        {
+          configuration_variables.ui8_lcd_backlight_off_brightness--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        // * 5 to show a value from 0 to 100% in steps of 5%
+        lcd_print (configuration_variables.ui8_lcd_backlight_off_brightness * 5, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // backlight on brightness
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_lcd_backlight_on_brightness < 20)
+        {
+          configuration_variables.ui8_lcd_backlight_on_brightness++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_lcd_backlight_on_brightness > 0)
+        {
+          configuration_variables.ui8_lcd_backlight_on_brightness--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        // * 5 to show a value from 0 to 100% in steps of 5%
+        lcd_print (configuration_variables.ui8_lcd_backlight_on_brightness * 5, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // auto power off
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_lcd_power_off_time++;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_lcd_power_off_time--;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_lcd_power_off_time, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // temperature field config
+    case 3:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        if (configuration_variables.ui8_temperature_field_config < 2)
+        {
+          configuration_variables.ui8_temperature_field_config++;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (configuration_variables.ui8_temperature_field_config > 0)
+        {
+          configuration_variables.ui8_temperature_field_config--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_temperature_field_config, ODOMETER_FIELD, 1);
+      }
+    break;
+
+  // reset to defaults
+  case 4:
+    if (get_button_up_click_event ())
+    {
+      clear_button_up_click_event ();
+
+      ui8_reset_to_defaults_counter++;
+      if (ui8_reset_to_defaults_counter > 9)
+      {
+        eeprom_erase_key_value ();
+        // disables the power of LCD
+        GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+      }
+    }
+
+    if (get_button_down_click_event ())
+    {
+      clear_button_down_click_event ();
+      if (ui8_reset_to_defaults_counter > 0)
+      {
+        ui8_reset_to_defaults_counter--;
+      }
+    }
+
+    if (ui8_lcd_menu_flash_state)
+    {
+      lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
+    }
+  break;
+
+  }
+
+  lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+}
+
+void lcd_execute_menu_config_submenu_various (void)
+{
+  uint8_t ui8_temp;
+
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 3);
 
   switch (ui8_lcd_menu_config_submenu_state)
   {
@@ -927,63 +1074,6 @@ void lcd_execute_menu_config_submenu_various (void)
         lcd_print (configuration_variables.ui8_pas_max_cadence, ODOMETER_FIELD, 1);
       }
     break;
-
-    // temperature field config
-    case 3:
-      if (get_button_up_click_event ())
-      {
-        clear_button_up_click_event ();
-        if (configuration_variables.ui8_temperature_field_config < 2)
-        {
-          configuration_variables.ui8_temperature_field_config++;
-        }
-      }
-
-      if (get_button_down_click_event ())
-      {
-        clear_button_down_click_event ();
-        if (configuration_variables.ui8_temperature_field_config > 0)
-        {
-          configuration_variables.ui8_temperature_field_config--;
-        }
-      }
-
-      if (ui8_lcd_menu_flash_state)
-      {
-        lcd_print (configuration_variables.ui8_temperature_field_config, ODOMETER_FIELD, 1);
-      }
-    break;
-
-  // reset to defaults
-  case 4:
-    if (get_button_up_click_event ())
-    {
-      clear_button_up_click_event ();
-
-      ui8_reset_to_defaults_counter++;
-      if (ui8_reset_to_defaults_counter > 9)
-      {
-        eeprom_erase_key_value ();
-        // disables the power of LCD
-        GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
-      }
-    }
-
-    if (get_button_down_click_event ())
-    {
-      clear_button_down_click_event ();
-      if (ui8_reset_to_defaults_counter > 0)
-      {
-        ui8_reset_to_defaults_counter--;
-      }
-    }
-
-    if (ui8_lcd_menu_flash_state)
-    {
-      lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
-    }
-  break;
-
   }
 
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
@@ -1274,20 +1364,19 @@ void lights_state (void)
     {
       ui8_lights_state = 1;
       lcd_lights_symbol = 1;
-      lcd_backlight_intensity = 5;
       motor_controller_data.ui8_lights = 1;
     }
     else
     {
       ui8_lights_state = 0;
       lcd_lights_symbol = 0;
-      lcd_backlight_intensity = 0;
       motor_controller_data.ui8_lights = 0;
     }
   }
 
+  if (ui8_lights_state == 0) { lcd_set_backlight_intensity (configuration_variables.ui8_lcd_backlight_off_brightness); }
+  else { lcd_set_backlight_intensity (configuration_variables.ui8_lcd_backlight_on_brightness); }
   lcd_enable_lights_symbol (lcd_lights_symbol);
-  lcd_set_backlight_intensity (lcd_backlight_intensity); // TODO: implement backlight intensity control
 }
 
 void walk_assist_state (void)
@@ -1890,9 +1979,14 @@ void lcd_init (void)
 
 void lcd_set_backlight_intensity (uint8_t ui8_intensity)
 {
-  if (ui8_intensity <= 9)
+  if (ui8_intensity == 0)
   {
-    TIM1_SetCompare4 (ui8_intensity); // set background light
+    TIM1_CCxCmd (TIM1_CHANNEL_4, DISABLE);
+  }
+  else if (ui8_intensity <= 20)
+  {
+    TIM1_SetCompare4 ((uint16_t) ui8_intensity);
+    TIM1_CCxCmd (TIM1_CHANNEL_4, ENABLE);
   }
 }
 
