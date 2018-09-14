@@ -179,8 +179,7 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
   p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation = (ui8_temp & 2) >> 1;
   p_configuration_variables->ui8_throttle_adc_measures_motor_temperature = (ui8_temp & 4) >> 2;
-  p_configuration_variables->ui8_motor_over_temperature_limit_current = (ui8_temp & 8) >> 3;
-  p_configuration_variables->ui8_temperature_field_config = (ui8_temp & 48) >> 4;
+  p_configuration_variables->ui8_temperature_field_config = (ui8_temp & 24) >> 3;
 
   p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
@@ -254,8 +253,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [22] = (p_configuration_variables->ui8_motor_voltage_type & 1) |
                       ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1) |
                       ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 2) |
-                      ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 3) |
-                      ((p_configuration_variables->ui8_temperature_field_config & 3) << 4);
+                      ((p_configuration_variables->ui8_temperature_field_config & 3) << 3);
 
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {

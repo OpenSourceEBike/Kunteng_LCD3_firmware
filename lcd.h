@@ -65,7 +65,6 @@ typedef struct _configuration_variables
   uint8_t ui8_startup_motor_power_boost_fade_time;
   uint8_t ui8_startup_motor_power_boost [9];
   uint16_t ui16_adc_motor_temperature_10b;
-  uint8_t ui8_motor_over_temperature_limit_current;
   uint8_t ui8_throttle_adc_measures_motor_temperature;
   uint8_t ui8_motor_temperature_min_value_to_limit;
   uint8_t ui8_motor_temperature_max_value_to_limit;

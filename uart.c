@@ -203,8 +203,7 @@ void clock_uart_data (void)
           ui8_tx_buffer[6] = ((p_configuration_variables->ui8_cruise_control & 1) |
                              ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
                               ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2) |
-                              ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 3) |
-                              ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 4));
+                              ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 3));
           ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_state;
         break;
 
