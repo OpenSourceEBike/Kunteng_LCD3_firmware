@@ -67,7 +67,12 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_LCD_BACKLIGHT_ON_BRIGHTNESS,
     DEFAULT_VALUE_LCD_BACKLIGHT_OFF_BRIGHTNESS,
     DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_0,
-    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1
+    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1,
+    DEFAULT_VALUE_OFFROAD_FUNC_ENABLED,
+    DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP,
+    DEFAULT_VALUE_OFFROAD_SPEED_LIMIT,
+    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED,
+    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25
   };
 
 static void eeprom_write_array (uint8_t *array, uint8_t ui8_len);
@@ -212,6 +217,12 @@ static void eeprom_read_values_to_variables (void)
   ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_1);
   ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
   p_configuration_variables->ui16_battery_pack_resistance_x1000 = ui16_temp;
+
+  p_configuration_variables->ui8_offroad_func_enabled = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_FUNC_ENABLED);
+  p_configuration_variables->ui8_offroad_enabled_on_startup = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP);
+  p_configuration_variables->ui8_offroad_speed_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT);
+  p_configuration_variables->ui8_offroad_power_limit_enabled = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED);
+  p_configuration_variables->ui8_offroad_power_limit_div25 = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25);
 }
 
 void eeprom_write_variables (void)
@@ -280,6 +291,12 @@ static void variables_to_array (uint8_t *ui8_array)
 
   ui8_array [52] = p_configuration_variables->ui16_battery_pack_resistance_x1000 & 255;
   ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance_x1000 >> 8) & 255;
+
+  ui8_array [54] = p_configuration_variables->ui8_offroad_func_enabled;
+  ui8_array [55] = p_configuration_variables->ui8_offroad_enabled_on_startup;
+  ui8_array [56] = p_configuration_variables->ui8_offroad_speed_limit;
+  ui8_array [57] = p_configuration_variables->ui8_offroad_power_limit_enabled;
+  ui8_array [58] = p_configuration_variables->ui8_offroad_power_limit_div25;
 }
 
 static void eeprom_write_array (uint8_t *array, uint8_t ui8_len)
