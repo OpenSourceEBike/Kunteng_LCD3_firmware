@@ -60,10 +60,22 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME,
     DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME,
     DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT,
-    DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT
+    DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT,
+    DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0,
+    DEFAULT_VALUE_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1,
+    DEFAULT_VALUE_LCD_POWER_OFF_TIME,
+    DEFAULT_VALUE_LCD_BACKLIGHT_ON_BRIGHTNESS,
+    DEFAULT_VALUE_LCD_BACKLIGHT_OFF_BRIGHTNESS,
+    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_0,
+    DEFAULT_VALUE_BATTERY_PACK_RESISTANCE_1,
+    DEFAULT_VALUE_OFFROAD_FUNC_ENABLED,
+    DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP,
+    DEFAULT_VALUE_OFFROAD_SPEED_LIMIT,
+    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED,
+    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25
   };
 
-static void eeprom_write_array (uint8_t *array);
+static void eeprom_write_array (uint8_t *array, uint8_t ui8_len);
 static void eeprom_read_values_to_variables (void);
 static void variables_to_array (uint8_t *ui8_array);
 
@@ -76,7 +88,7 @@ void eeprom_init (void)
   ui8_data = FLASH_ReadByte (ADDRESS_KEY);
   if (ui8_data != KEY) // verify if our key exist
   {
-    eeprom_write_array (array_default_values);
+    eeprom_write_array (array_default_values, ((uint32_t) EEPROM_BYTES_STORED));
   }
 }
 
@@ -172,8 +184,7 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_motor_voltage_type = ui8_temp & 1;
   p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation = (ui8_temp & 2) >> 1;
   p_configuration_variables->ui8_throttle_adc_measures_motor_temperature = (ui8_temp & 4) >> 2;
-  p_configuration_variables->ui8_motor_over_temperature_limit_current = (ui8_temp & 8) >> 3;
-  p_configuration_variables->ui8_temperature_field_config = (ui8_temp & 48) >> 4;
+  p_configuration_variables->ui8_temperature_field_config = (ui8_temp & 24) >> 3;
 
   p_configuration_variables->ui8_number_of_assist_levels = FLASH_ReadByte (ADDRESS_NUMBER_OF_ASSIST_LEVELS);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
@@ -182,23 +193,43 @@ static void eeprom_read_values_to_variables (void)
   }
 
   p_configuration_variables->ui8_startup_motor_power_boost_state = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE);
-  p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME);
+  p_configuration_variables->ui8_startup_motor_power_boost_time = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_TIME);
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
-    p_configuration_variables->ui8_startup_motor_power_boost [ui8_index] = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
+    p_configuration_variables->ui8_startup_motor_power_boost [ui8_index] = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1 + ui8_index);
   }
 
-  p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
+  p_configuration_variables->ui8_startup_motor_power_boost_fade_time = FLASH_ReadByte (ADDRESS_STARTUP_MOTOR_POWER_BOOST_FADE_TIME);
 
-  p_configuration_variables->ui8_motor_temperature_min_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT);
-  p_configuration_variables->ui8_motor_temperature_max_value_to_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT);
+  p_configuration_variables->ui8_motor_temperature_min_value_to_limit = FLASH_ReadByte (ADDRESS_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT);
+  p_configuration_variables->ui8_motor_temperature_max_value_to_limit = FLASH_ReadByte (ADDRESS_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT);
+
+  ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1);
+  ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+  p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 = ui16_temp;
+
+  p_configuration_variables->ui8_lcd_power_off_time_minutes = FLASH_ReadByte (ADDRESS_LCD_POWER_OFF_TIME);
+  p_configuration_variables->ui8_lcd_backlight_on_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_ON_BRIGHTNESS);
+  p_configuration_variables->ui8_lcd_backlight_off_brightness = FLASH_ReadByte (ADDRESS_LCD_BACKLIGHT_OFF_BRIGHTNESS);
+
+  ui16_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_BATTERY_PACK_RESISTANCE_1);
+  ui16_temp += (((uint16_t) ui8_temp << 8) & 0xff00);
+  p_configuration_variables->ui16_battery_pack_resistance_x1000 = ui16_temp;
+
+  p_configuration_variables->ui8_offroad_func_enabled = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_FUNC_ENABLED);
+  p_configuration_variables->ui8_offroad_enabled_on_startup = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP);
+  p_configuration_variables->ui8_offroad_speed_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT);
+  p_configuration_variables->ui8_offroad_power_limit_enabled = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED);
+  p_configuration_variables->ui8_offroad_power_limit_div25 = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25);
 }
 
 void eeprom_write_variables (void)
 {
   uint8_t array_variables [EEPROM_BYTES_STORED];
   variables_to_array (array_variables);
-  eeprom_write_array (array_variables);
+  eeprom_write_array (array_variables, ((uint8_t) EEPROM_BYTES_STORED));
 }
 
 static void variables_to_array (uint8_t *ui8_array)
@@ -233,8 +264,7 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [22] = (p_configuration_variables->ui8_motor_voltage_type & 1) |
                       ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 1) |
                       ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 2) |
-                      ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 3) |
-                      ((p_configuration_variables->ui8_temperature_field_config & 3) << 4);
+                      ((p_configuration_variables->ui8_temperature_field_config & 3) << 3);
 
   for (ui8_index = 0; ui8_index < 9; ui8_index++)
   {
@@ -251,9 +281,25 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [44] = p_configuration_variables->ui8_startup_motor_power_boost_fade_time;
   ui8_array [45] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
   ui8_array [46] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
+
+  ui8_array [47] = p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 & 255;
+  ui8_array [48] = (p_configuration_variables->ui16_battery_voltage_reset_wh_counter_x10 >> 8) & 255;
+
+  ui8_array [49] = p_configuration_variables->ui8_lcd_power_off_time_minutes;
+  ui8_array [50] = p_configuration_variables->ui8_lcd_backlight_on_brightness;
+  ui8_array [51] = p_configuration_variables->ui8_lcd_backlight_off_brightness;
+
+  ui8_array [52] = p_configuration_variables->ui16_battery_pack_resistance_x1000 & 255;
+  ui8_array [53] = (p_configuration_variables->ui16_battery_pack_resistance_x1000 >> 8) & 255;
+
+  ui8_array [54] = p_configuration_variables->ui8_offroad_func_enabled;
+  ui8_array [55] = p_configuration_variables->ui8_offroad_enabled_on_startup;
+  ui8_array [56] = p_configuration_variables->ui8_offroad_speed_limit;
+  ui8_array [57] = p_configuration_variables->ui8_offroad_power_limit_enabled;
+  ui8_array [58] = p_configuration_variables->ui8_offroad_power_limit_div25;
 }
 
-static void eeprom_write_array (uint8_t *array)
+static void eeprom_write_array (uint8_t *array, uint8_t ui8_len)
 {
   uint8_t ui8_i;
 
@@ -262,10 +308,16 @@ static void eeprom_write_array (uint8_t *array)
     FLASH_Unlock (FLASH_MEMTYPE_DATA);
   }
 
-  for (ui8_i = 0; ui8_i < EEPROM_BYTES_STORED; ui8_i++)
+  for (ui8_i = 0; ui8_i < ui8_len; ui8_i++)
   {
-    FLASH_ProgramByte (EEPROM_BASE_ADDRESS + ui8_i, *array++);
+    FLASH_ProgramByte (((uint32_t) EEPROM_BASE_ADDRESS) + ((uint32_t) ui8_i), *array++);
   }
 
   FLASH_Lock (FLASH_MEMTYPE_DATA);
+}
+
+void eeprom_erase_key_value (void)
+{
+  uint8_t array_variables [1] = { 0 }; // key value is the first element, let's keep at 0
+  eeprom_write_array (array_variables, 1);
 }

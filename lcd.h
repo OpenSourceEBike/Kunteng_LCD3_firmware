@@ -28,9 +28,11 @@ typedef struct _motor_controller_data
   uint8_t ui8_error_code;
   uint16_t ui16_wheel_speed_x10;
   uint8_t ui8_motor_controller_state_2;
+  uint8_t ui8_braking;
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
   uint8_t ui8_walk_assist_level;
+  uint8_t ui8_offroad_mode;
   uint16_t ui16_motor_speed_erps;
   uint8_t ui8_foc_angle;
   uint8_t ui8_temperature_current_limiting_value;
@@ -52,6 +54,8 @@ typedef struct _configuration_variables
   uint8_t ui8_battery_cells_number;
   uint8_t ui8_battery_max_current;
   uint16_t ui16_battery_low_voltage_cut_off_x10;
+  uint16_t ui16_battery_voltage_reset_wh_counter_x10;
+  uint16_t ui16_battery_pack_resistance_x1000;
   uint8_t ui8_motor_voltage_type;
   uint8_t ui8_motor_assistance_startup_without_pedal_rotation;
   uint8_t ui8_pas_max_cadence;
@@ -62,11 +66,18 @@ typedef struct _configuration_variables
   uint8_t ui8_startup_motor_power_boost_fade_time;
   uint8_t ui8_startup_motor_power_boost [9];
   uint16_t ui16_adc_motor_temperature_10b;
-  uint8_t ui8_motor_over_temperature_limit_current;
   uint8_t ui8_throttle_adc_measures_motor_temperature;
   uint8_t ui8_motor_temperature_min_value_to_limit;
   uint8_t ui8_motor_temperature_max_value_to_limit;
   uint8_t ui8_temperature_field_config;
+  uint8_t ui8_lcd_power_off_time_minutes;
+  uint8_t ui8_lcd_backlight_on_brightness;
+  uint8_t ui8_lcd_backlight_off_brightness;
+  uint8_t ui8_offroad_func_enabled;
+  uint8_t ui8_offroad_enabled_on_startup;
+  uint8_t ui8_offroad_speed_limit;
+  uint8_t ui8_offroad_power_limit_enabled;
+  uint8_t ui8_offroad_power_limit_div25;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits
@@ -112,23 +123,9 @@ extern uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 // : from timer label ui8_lcd_frame_buffer[23] |= 8
 
 void lcd_init (void);
-void lcd_enable_vol_symbol (uint8_t ui8_state);
-void lcd_enable_w_symbol (uint8_t ui8_state);
-void lcd_enable_odometer_point_symbol (uint8_t ui8_state);
-void lcd_enable_brake_symbol (uint8_t ui8_state);
-void lcd_enable_assist_symbol (uint8_t ui8_state);
-void lcd_enable_battery_power_1_symbol (uint8_t ui8_state);
-void lcd_enable_temperature_1_symbol (uint8_t ui8_state);
-void lcd_enable_kmh_symbol (uint8_t ui8_state);
-void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
-void lcd_enable_battery_symbols (uint8_t ui8_state);
-void lcd_enable_temperature_degrees_symbol (uint8_t ui8_state);
-void lcd_update (void);
-void lcd_clear (void);
-void lcd_set_frame_buffer (void);
-void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options);
 void clock_lcd (void);
 struct_configuration_variables* get_configuration_variables (void);
 struct_motor_controller_data* lcd_get_motor_controller_data (void);
+void automatic_power_off_counter_reset (void);
 
 #endif /* _LCD_H_ */

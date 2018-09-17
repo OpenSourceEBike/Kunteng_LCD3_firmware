@@ -34,11 +34,11 @@ void uart2_init (void)
 {
   UART2_DeInit();
   UART2_Init((uint32_t) 9600,
-	     UART2_WORDLENGTH_8D,
-	     UART2_STOPBITS_1,
-	     UART2_PARITY_NO,
-	     UART2_SYNCMODE_CLOCK_DISABLE,
-	     UART2_MODE_TXRX_ENABLE);
+       UART2_WORDLENGTH_8D,
+       UART2_STOPBITS_1,
+       UART2_PARITY_NO,
+       UART2_SYNCMODE_CLOCK_DISABLE,
+       UART2_MODE_TXRX_ENABLE);
 
   UART2_ITConfig(UART2_IT_RXNE_OR, ENABLE);
 }
@@ -116,6 +116,7 @@ void clock_uart_data (void)
       p_motor_controller_data->ui8_battery_current_x5 = ui8_rx_buffer[4];
       p_motor_controller_data->ui16_wheel_speed_x10 = (((uint16_t) ui8_rx_buffer [6]) << 8) + ((uint16_t) ui8_rx_buffer [5]);
       p_motor_controller_data->ui8_motor_controller_state_2 = ui8_rx_buffer[7];
+      p_motor_controller_data->ui8_braking = p_motor_controller_data->ui8_motor_controller_state_2 & 1;
       p_motor_controller_data->ui8_error_code = ui8_rx_buffer[8];
 
       if (p_configuration_variables->ui8_throttle_adc_measures_motor_temperature)
@@ -156,10 +157,11 @@ void clock_uart_data (void)
       }
 
       // set lights state
-      if (p_motor_controller_data->ui8_lights == 1) ui8_tx_buffer[2] |= 0x01;
-
       // walk assist level state
-      if (p_motor_controller_data->ui8_walk_assist_level == 1) ui8_tx_buffer[2] |= 0x02;
+      // set offroad state
+      ui8_tx_buffer[2] = (p_motor_controller_data->ui8_lights & 1) |
+          ((p_motor_controller_data->ui8_walk_assist_level & 1) << 1) |
+          ((p_motor_controller_data->ui8_offroad_mode & 1) << 2);
 
       // battery max current in amps
       ui8_tx_buffer[3] = p_configuration_variables->ui8_battery_max_current;
@@ -169,7 +171,7 @@ void clock_uart_data (void)
 
       // now send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
-#define VARIABLE_ID_MAX_NUMBER 7
+#define VARIABLE_ID_MAX_NUMBER 9
       if (ui8_last_package_id == ui8_lcd_variable_id)
       {
         ui8_lcd_variable_id = (ui8_lcd_variable_id + 1) % VARIABLE_ID_MAX_NUMBER;
@@ -203,8 +205,7 @@ void clock_uart_data (void)
           ui8_tx_buffer[6] = ((p_configuration_variables->ui8_cruise_control & 1) |
                              ((p_configuration_variables->ui8_motor_voltage_type & 1) << 1) |
                               ((p_configuration_variables->ui8_motor_assistance_startup_without_pedal_rotation & 1) << 2) |
-                              ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 3) |
-                              ((p_configuration_variables->ui8_motor_over_temperature_limit_current & 1) << 4));
+                              ((p_configuration_variables->ui8_throttle_adc_measures_motor_temperature & 1) << 3));
           ui8_tx_buffer[7] = p_configuration_variables->ui8_startup_motor_power_boost_state;
         break;
 
@@ -224,6 +225,19 @@ void clock_uart_data (void)
           // motor over temperature min and max values to limit
           ui8_tx_buffer[6] = p_configuration_variables->ui8_motor_temperature_min_value_to_limit;
           ui8_tx_buffer[7] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
+        break;
+
+        case 7:
+          // offroad mode configuration
+          ui8_tx_buffer[6] = ((p_configuration_variables->ui8_offroad_func_enabled & 1) |
+                                ((p_configuration_variables->ui8_offroad_enabled_on_startup & 1) << 1)); 
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_offroad_speed_limit;
+        break;
+
+        case 8:
+          // offroad mode power limit configuration
+          ui8_tx_buffer[6] = p_configuration_variables->ui8_offroad_power_limit_enabled & 1; 
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_offroad_power_limit_div25;
         break;
 
         default:

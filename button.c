@@ -127,7 +127,9 @@ void clock_button (void)
       if (!get_button_onoff_click_event () &&
           !get_button_onoff_long_click_event () &&
           get_button_onoff_state ())
-        ui8_onoff_button_state = 1;
+        {
+          ui8_onoff_button_state = 1;
+        }
     break;
 
     case 1:
@@ -168,7 +170,9 @@ void clock_button (void)
           get_button_down_long_click_event () &&
           get_button_up_down_click_event ()) &&
           get_button_down_state ())
+      {
         ui8_down_button_state = 1;
+      }
     break;
 
     case 1:
@@ -219,7 +223,9 @@ void clock_button (void)
           get_button_up_long_click_event () &&
           get_button_up_down_click_event ()) &&
           get_button_up_state ())
+      {
         ui8_up_button_state = 1;
+      }
     break;
 
     case 1:

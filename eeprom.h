@@ -11,14 +11,14 @@
 
 #include "lcd.h"
 
-#define KEY                                                                 0xd9
+#define KEY                                                                 0xe3
 
-#define EEPROM_BASE_ADDRESS 			                                          0x4000
-#define ADDRESS_KEY 				                                                0 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL 			                                          1 + EEPROM_BASE_ADDRESS
-#define ADDRESS_WHEEL_PERIMETER_0	                                          2 + EEPROM_BASE_ADDRESS
+#define EEPROM_BASE_ADDRESS                                                 0x4000
+#define ADDRESS_KEY 				                                        0 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL 			                                    1 + EEPROM_BASE_ADDRESS
+#define ADDRESS_WHEEL_PERIMETER_0	                                        2 + EEPROM_BASE_ADDRESS
 #define ADDRESS_WHEEL_PERIMETER_1                                           3 + EEPROM_BASE_ADDRESS
-#define ADDRESS_MAX_WHEEL_SPEED	 	                                          4 + EEPROM_BASE_ADDRESS
+#define ADDRESS_MAX_WHEEL_SPEED	 	                                        4 + EEPROM_BASE_ADDRESS
 #define ADDRESS_UNITS_TYPE                                                  5 + EEPROM_BASE_ADDRESS
 #define ADDRESS_HW_X10_OFFSET_0                                             6 + EEPROM_BASE_ADDRESS
 #define ADDRESS_HW_X10_OFFSET_1                                             7 + EEPROM_BASE_ADDRESS
@@ -48,23 +48,36 @@
 #define ADDRESS_ASSIST_LEVEL_FACTOR_9                                       31 + EEPROM_BASE_ADDRESS
 #define ADDRESS_NUMBER_OF_ASSIST_LEVELS                                     32 + EEPROM_BASE_ADDRESS
 #define ADDRESS_STARTUP_MOTOR_POWER_BOOST_STATE                             33 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1      34 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2      35 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3      36 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4      37 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5      38 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6      39 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7      40 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8      41 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9      42 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_TIME                43 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_STARTUP_MOTOR_POWER_BOOST_FADE_TIME           44 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT             45 + EEPROM_BASE_ADDRESS
-#define ADDRESS_DEFAULT_VALUE_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT             46 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                                                 47
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_1                    34 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_2                    35 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_3                    36 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_4                    37 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_5                    38 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_6                    39 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_7                    40 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_8                    41 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_ASSIST_LEVEL_9                    42 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_TIME                              43 + EEPROM_BASE_ADDRESS
+#define ADDRESS_STARTUP_MOTOR_POWER_BOOST_FADE_TIME                         44 + EEPROM_BASE_ADDRESS
+#define ADDRESS_MOTOR_TEMPERATURE_MIN_VALUE_LIMIT                           45 + EEPROM_BASE_ADDRESS
+#define ADDRESS_MOTOR_TEMPERATURE_MAX_VALUE_LIMIT                           46 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_0                      47 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_VOLTAGE_RESET_WH_COUNTER_X10_1                      48 + EEPROM_BASE_ADDRESS
+#define ADDRESS_LCD_POWER_OFF_TIME                                          49 + EEPROM_BASE_ADDRESS
+#define ADDRESS_LCD_BACKLIGHT_ON_BRIGHTNESS                                 50 + EEPROM_BASE_ADDRESS
+#define ADDRESS_LCD_BACKLIGHT_OFF_BRIGHTNESS                                51 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_PACK_RESISTANCE_0                                   52 + EEPROM_BASE_ADDRESS
+#define ADDRESS_BATTERY_PACK_RESISTANCE_1                                   53 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_OFFROAD_FUNC_ENABLED                          54 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP               55 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT                           56 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED                   57 + EEPROM_BASE_ADDRESS
+#define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25                     58 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                                                 59
 
 void eeprom_init (void);
 void eeprom_init_variables (void);
 void eeprom_write_variables (void);
+void eeprom_erase_key_value (void);
 
 #endif /* _EEPROM_H_ */
