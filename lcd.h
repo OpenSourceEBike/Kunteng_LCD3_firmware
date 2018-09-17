@@ -36,6 +36,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_foc_angle;
   uint8_t ui8_temperature_current_limiting_value;
   uint8_t ui8_motor_temperature;
+  uint32_t ui32_wheel_speed_sensor_tick_counter;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
