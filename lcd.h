@@ -32,6 +32,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_pedal_cadence;
   uint8_t ui8_lights;
   uint8_t ui8_walk_assist_level;
+  uint8_t ui8_offroad_mode;
   uint16_t ui16_motor_speed_erps;
   uint8_t ui8_foc_angle;
   uint8_t ui8_temperature_current_limiting_value;
@@ -73,6 +74,11 @@ typedef struct _configuration_variables
   uint8_t ui8_lcd_power_off_time_minutes;
   uint8_t ui8_lcd_backlight_on_brightness;
   uint8_t ui8_lcd_backlight_off_brightness;
+  uint8_t ui8_offroad_func_enabled;
+  uint8_t ui8_offroad_enabled_on_startup;
+  uint8_t ui8_offroad_speed_limit;
+  uint8_t ui8_offroad_power_limit_enabled;
+  uint8_t ui8_offroad_power_limit_div25;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

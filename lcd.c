@@ -22,7 +22,7 @@
 #include "pins.h"
 #include "uart.h"
 
-#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 9
+#define LCD_MENU_CONFIG_SUBMENU_MAX_NUMBER 10
 
 uint8_t ui8_lcd_frame_buffer[LCD_FRAME_BUFFER_SIZE];
 
@@ -100,11 +100,15 @@ static struct_configuration_variables configuration_variables;
 static uint16_t ui16_battery_soc_watts_hour;
 
 static uint8_t ui8_reset_to_defaults_counter;
-
 static uint8_t ui8_state_temp_field;
 
 uint8_t ui8_lcd_power_off_time_counter_minutes = 0;
 static uint16_t ui16_lcd_power_off_time_counter = 0;
+
+static uint8_t offroad_mode_assist_symbol_state = 0;
+static uint8_t offroad_mode_assist_symbol_state_blink_counter = 0;
+
+static uint32_t ui32_odometer_temp = 0;
 
 void low_pass_filter_battery_voltage_current_power (void);
 void lcd_enable_motor_symbol (uint8_t ui8_state);
@@ -129,6 +133,7 @@ void low_pass_filter_pedal_torque (void);
 void lights_state (void);
 void lcd_set_backlight_intensity (uint8_t ui8_intensity);
 void walk_assist_state (void);
+void offroad_mode (void);
 void lcd_execute_main_screen (void);
 void lcd_execute_menu_config (void);
 void lcd_execute_menu_config_power (void);
@@ -139,6 +144,7 @@ void lcd_execute_menu_config_submenu_assist_level (void);
 void lcd_execute_menu_config_submenu_motor_startup_power_boost (void);
 void lcd_execute_menu_config_submenu_motor_temperature (void);
 void lcd_execute_menu_config_submenu_lcd ();
+void lcd_execute_menu_config_submenu_offroad_mode (void);
 void lcd_execute_menu_config_submenu_various (void);
 void lcd_execute_menu_config_submenu_technical (void);
 void update_menu_flashing_state (void);
@@ -156,11 +162,12 @@ void lcd_enable_temperature_1_symbol (uint8_t ui8_state);
 void lcd_enable_kmh_symbol (uint8_t ui8_state);
 void lcd_enable_wheel_speed_point_symbol (uint8_t ui8_state);
 void lcd_enable_temperature_degrees_symbol (uint8_t ui8_state);
+void lcd_enable_dst_symbol (uint8_t ui8_state);
+void lcd_enable_tm_symbol (uint8_t ui8_state);
 void lcd_update (void);
 void lcd_clear (void);
 void lcd_set_frame_buffer (void);
 void lcd_print (uint32_t ui32_number, uint8_t ui8_lcd_field, uint8_t ui8_options);
-
 
 void clock_lcd (void)
 {
@@ -179,16 +186,16 @@ void clock_lcd (void)
   }
 
   // enter in menu set power: ONOFF + UP click event
-  if (get_button_onoff_state () &&
-      get_button_up_state ())
+  if (!configuration_variables.ui8_offroad_func_enabled && 
+      get_button_onoff_state () && get_button_up_state ())
   {
     button_clear_events ();
     ui8_lcd_menu = 2;
   }
 
   // change temperature field state: ONOFF + DOWN click event
-  if (get_button_onoff_state () &&
-      get_button_down_state ())
+  if (!configuration_variables.ui8_offroad_func_enabled && 
+      get_button_onoff_state () && get_button_down_state ())
   {
     button_clear_events ();
 
@@ -248,6 +255,7 @@ void lcd_execute_main_screen (void)
   odometer ();
   wheel_speed ();
   walk_assist_state ();
+  offroad_mode ();
   power ();
   battery_soc ();
   lights_state ();
@@ -316,7 +324,7 @@ void lcd_execute_menu_config (void)
       break;
 
       case 5:
-        lcd_execute_menu_config_submenu_motor_temperature ();
+        lcd_execute_menu_config_submenu_motor_temperature ();        
       break;
 
       case 6:
@@ -324,10 +332,14 @@ void lcd_execute_menu_config (void)
       break;
 
       case 7:
-        lcd_execute_menu_config_submenu_various ();
+        lcd_execute_menu_config_submenu_offroad_mode ();
       break;
 
       case 8:
+        lcd_execute_menu_config_submenu_various ();
+      break;
+
+      case 9:
         lcd_execute_menu_config_submenu_technical ();
       break;
 
@@ -1026,6 +1038,128 @@ void lcd_execute_menu_config_submenu_lcd (void)
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
 }
 
+void lcd_execute_menu_config_submenu_offroad_mode (void)
+{
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 5);
+
+  switch (ui8_lcd_menu_config_submenu_state)
+  {
+    // enable/disable offroad functionality
+    case 0:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_offroad_func_enabled |= 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_offroad_func_enabled &= ~1;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print ((configuration_variables.ui8_offroad_func_enabled & 1) ? 1: 0, ODOMETER_FIELD, 1);
+      }
+
+      lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+    break;
+
+    // enable offroad mode on system startup
+    case 1:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_offroad_enabled_on_startup |= 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_offroad_enabled_on_startup &= ~1;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print ((configuration_variables.ui8_offroad_enabled_on_startup & 1) ? 1: 0, ODOMETER_FIELD, 1);
+      }
+
+      lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+    break;
+
+    // offroad speed limit (when offroad mode is off)
+    case 2:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_offroad_speed_limit++;
+        if (configuration_variables.ui8_offroad_speed_limit > 99)  { configuration_variables.ui8_offroad_speed_limit = 99; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_offroad_speed_limit--;
+        if (configuration_variables.ui8_offroad_speed_limit < 1)  { configuration_variables.ui8_offroad_speed_limit = 1; }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (((uint16_t) configuration_variables.ui8_offroad_speed_limit) * 10, WHEEL_SPEED_FIELD, 0);
+      }
+
+      lcd_enable_kmh_symbol (1);
+    break;
+
+    // enable/disable power limit
+    case 3:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_offroad_power_limit_enabled |= 1;
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_offroad_power_limit_enabled &= ~1;
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print ((configuration_variables.ui8_offroad_power_limit_enabled & 1) ? 1: 0, ODOMETER_FIELD, 1);
+      }
+
+      lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+    break;
+
+    // power limit (W)
+    case 4:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+        configuration_variables.ui8_offroad_power_limit_div25++;
+        if (configuration_variables.ui8_offroad_power_limit_div25 > 40)  { configuration_variables.ui8_offroad_power_limit_div25 = 40; }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        configuration_variables.ui8_offroad_power_limit_div25--;
+        if (configuration_variables.ui8_offroad_power_limit_div25 < 4)  { configuration_variables.ui8_offroad_power_limit_div25 = 4; }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (configuration_variables.ui8_offroad_power_limit_div25 * 25, ODOMETER_FIELD, 1);
+      }
+
+      lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
+    break;
+  }
+}
+
 void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
@@ -1235,7 +1369,13 @@ uint8_t first_time_management (void)
     {
       configuration_variables.ui32_wh_x10_offset = 0;
     }
-  }
+
+    if (configuration_variables.ui8_offroad_func_enabled && 
+      configuration_variables.ui8_offroad_enabled_on_startup)
+    {
+      motor_controller_data.ui8_offroad_mode = 1;
+    }
+  }  
 
   return ui8_status;
 }
@@ -1379,7 +1519,11 @@ void assist_level_state (void)
   }
 
   lcd_print (configuration_variables.ui8_assist_level, ASSIST_LEVEL_FIELD, 0);
-  lcd_enable_assist_symbol (1);
+
+  if (motor_controller_data.ui8_offroad_mode == 0)
+  {
+    lcd_enable_assist_symbol (1);
+  }
 }
 
 void lights_state (void)
@@ -1416,13 +1560,40 @@ void walk_assist_state (void)
     {
       motor_controller_data.ui8_walk_assist_level = 1;
       lcd_enable_walk_symbol (1);
-      // Commented on 2018.08.30 as this is creating issues to users because they don't how this offroad mode works.
-      //if (configuration_variables.ui8_odometer_field_state == 1 ) { configuration_variables.ui8_wheel_max_speed = 99; } //Offroad-Mode enabled!
     }
     else
     {
       motor_controller_data.ui8_walk_assist_level = 0;
       clear_button_down_long_click_event ();
+    }
+  }
+}
+
+void offroad_mode (void)
+{
+  if (configuration_variables.ui8_offroad_func_enabled) 
+  {
+    if (get_button_onoff_state () && get_button_up_state ())
+    {
+      button_clear_events ();
+      motor_controller_data.ui8_offroad_mode = 1;
+    }
+
+    if (get_button_onoff_state () && get_button_down_state ())
+    {
+      button_clear_events ();
+      motor_controller_data.ui8_offroad_mode = 0;
+    }
+
+    if (motor_controller_data.ui8_offroad_mode == 1) 
+    {
+      if (offroad_mode_assist_symbol_state_blink_counter++ > 50)
+      {
+        offroad_mode_assist_symbol_state_blink_counter = 0;
+        offroad_mode_assist_symbol_state = !offroad_mode_assist_symbol_state;
+      }
+
+      lcd_enable_assist_symbol (offroad_mode_assist_symbol_state);
     }
   }
 }
@@ -1435,7 +1606,7 @@ void brake (void)
 
 void odometer_increase_field_state (void)
 {
-  configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 6;
+  configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 7;
 }
 
 void odometer (void)
@@ -1445,35 +1616,46 @@ void odometer (void)
   {
     clear_button_onoff_click_event ();
     odometer_increase_field_state ();
-    // Commented on 2018.08.30 as this is creating issues to users because they don't how this offroad mode works.
-    //configuration_variables.ui8_wheel_max_speed = 25; // Offroad-Mode disabled
   }
 
   switch (configuration_variables.ui8_odometer_field_state)
   {
-    // voltage value
+    // Single Trip Distance
     case 0:
+      ui32_odometer_temp = motor_controller_data.ui32_wheel_speed_sensor_tick_counter *
+                            ((uint32_t) configuration_variables.ui16_wheel_perimeter);
+      // avoid division by 0
+      if (ui32_odometer_temp > 100000) { ui32_odometer_temp /= 100000;}  // milimmeters to 0.1kms
+      else { ui32_odometer_temp = 0; }
+
+      lcd_print (ui32_odometer_temp, ODOMETER_FIELD, 0);
+      lcd_enable_dst_symbol (1);
+      lcd_enable_km_symbol (1);
+    break;
+
+    // voltage value
+    case 1:
       lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD, 0);
       lcd_enable_vol_symbol (1);
     break;
 
     // current value
-    case 1:
+    case 2:
       lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD, 0);
     break;
 
     // Wh value
-    case 2:
+    case 3:
       lcd_print (ui32_wh_x10, ODOMETER_FIELD, 0);
     break;
 
     // pedal cadence value
-    case 3:
+    case 4:
       lcd_print (motor_controller_data.ui8_pedal_cadence, ODOMETER_FIELD, 1);
     break;
 
     // battery SOC in watts/hour
-    case 4:
+    case 5:
       if (configuration_variables.ui8_show_numeric_battery_soc & 1)
       {
         lcd_print (ui16_battery_soc_watts_hour, ODOMETER_FIELD, 1);
@@ -1485,7 +1667,7 @@ void odometer (void)
     break;
 
     // motor temperature
-    case 5:
+    case 6:
       if (configuration_variables.ui8_throttle_adc_measures_motor_temperature)
       {
         lcd_print (motor_controller_data.ui8_motor_temperature, ODOMETER_FIELD, 1);

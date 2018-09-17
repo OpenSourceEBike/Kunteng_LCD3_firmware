@@ -18,7 +18,7 @@
 volatile uint8_t ui8_received_package_flag = 0;
 volatile uint8_t ui8_rx_buffer[22];
 volatile uint8_t ui8_rx_counter = 0;
-volatile uint8_t ui8_tx_buffer[10];
+volatile uint8_t ui8_tx_buffer[11];
 volatile uint8_t ui8_tx_counter = 0;
 volatile uint8_t ui8_i;
 volatile uint8_t ui8_checksum;
@@ -35,11 +35,11 @@ void uart2_init (void)
 {
   UART2_DeInit();
   UART2_Init((uint32_t) 9600,
-	     UART2_WORDLENGTH_8D,
-	     UART2_STOPBITS_1,
-	     UART2_PARITY_NO,
-	     UART2_SYNCMODE_CLOCK_DISABLE,
-	     UART2_MODE_TXRX_ENABLE);
+       UART2_WORDLENGTH_8D,
+       UART2_STOPBITS_1,
+       UART2_PARITY_NO,
+       UART2_SYNCMODE_CLOCK_DISABLE,
+       UART2_MODE_TXRX_ENABLE);
 
   UART2_ITConfig(UART2_IT_RXNE_OR, ENABLE);
 }
@@ -93,7 +93,7 @@ void UART2_IRQHandler(void) __interrupt(UART2_IRQHANDLER)
 
 void clock_uart_data (void)
 {
-  static ui32_wheel_speed_sensor_tick_counter_temp;
+  static uint32_t ui32_wss_tick_temp;
   struct_motor_controller_data *p_motor_controller_data;
   struct_configuration_variables *p_configuration_variables;
 
@@ -114,13 +114,13 @@ void clock_uart_data (void)
 
       // send a variable for each package sent but first verify if the last one was received otherwise, keep repeating
       // keep cycling so all variables are sent
-#define VARIABLE_ID_MAX_NUMBER 7
+#define VARIABLE_ID_MAX_NUMBER 9
       if ((ui8_rx_buffer [1]) == ui8_master_comm_package_id) // last package data ID was receipt, so send the next one
       {
         ui8_master_comm_package_id = (ui8_master_comm_package_id + 1) % VARIABLE_ID_MAX_NUMBER;
       }
 
-      ui8_slave_comm_package_id = ui8_tx_buffer[2];
+      ui8_slave_comm_package_id = ui8_rx_buffer[2];
 
       p_motor_controller_data->ui16_adc_battery_voltage = ui8_rx_buffer[3];
       p_motor_controller_data->ui16_adc_battery_voltage |= ((uint16_t) (ui8_rx_buffer[4] & 0x30)) << 4;
@@ -162,18 +162,18 @@ void clock_uart_data (void)
 
         case 2:
           // wheel_speed_sensor_tick_counter
-          ui32_wheel_speed_sensor_tick_counter_temp = ((uint32_t) ui8_tx_buffer[19]);
+          ui32_wss_tick_temp = ((uint32_t) ui8_rx_buffer[19]);
         break;
 
         case 3:
           // wheel_speed_sensor_tick_counter
-          ui32_wheel_speed_sensor_tick_counter_temp |= (((uint32_t) ui8_tx_buffer[19]) << 8);
+          ui32_wss_tick_temp |= (((uint32_t) ui8_rx_buffer[19]) << 8);
         break;
 
         case 4:
           // wheel_speed_sensor_tick_counter
-          ui32_wheel_speed_sensor_tick_counter_temp |= (((uint32_t) ui8_tx_buffer[19]) << 16);
-          p_motor_controller_data->ui32_wheel_speed_sensor_tick_counter = ui32_wheel_speed_sensor_tick_counter_temp;
+          ui32_wss_tick_temp |= (((uint32_t) ui8_rx_buffer[19]) << 16);
+          p_motor_controller_data->ui32_wheel_speed_sensor_tick_counter = ui32_wss_tick_temp;
         break;
       }
 
@@ -257,6 +257,19 @@ void clock_uart_data (void)
           ui8_tx_buffer[8] = p_configuration_variables->ui8_motor_temperature_max_value_to_limit;
         break;
 
+        case 7:
+          // offroad mode configuration
+          ui8_tx_buffer[7] = ((p_configuration_variables->ui8_offroad_func_enabled & 1) |
+                                ((p_configuration_variables->ui8_offroad_enabled_on_startup & 1) << 1)); 
+          ui8_tx_buffer[8] = p_configuration_variables->ui8_offroad_speed_limit;
+        break;
+
+        case 8:
+          // offroad mode power limit configuration
+          ui8_tx_buffer[7] = p_configuration_variables->ui8_offroad_power_limit_enabled & 1;
+          ui8_tx_buffer[8] = p_configuration_variables->ui8_offroad_power_limit_div25;
+        break;
+
         default:
           ui8_lcd_variable_id = 0;
         break;
@@ -264,15 +277,15 @@ void clock_uart_data (void)
 
       // prepare crc of the package
       ui16_crc_tx = 0xffff;
-      for (ui8_i = 0; ui8_i <= 7; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 8; ui8_i++)
       {
         crc16 (ui8_tx_buffer[ui8_i], &ui16_crc_tx);
       }
-      ui8_tx_buffer[8] = (uint8_t) (ui16_crc_tx & 0xff);
-      ui8_tx_buffer[9] = (uint8_t) (ui16_crc_tx >> 8) & 0xff;
+      ui8_tx_buffer[9] = (uint8_t) (ui16_crc_tx & 0xff);
+      ui8_tx_buffer[10] = (uint8_t) (ui16_crc_tx >> 8) & 0xff;
 
       // send the full package to UART
-      for (ui8_i = 0; ui8_i <= 9; ui8_i++)
+      for (ui8_i = 0; ui8_i <= 10; ui8_i++)
       {
         putchar (ui8_tx_buffer[ui8_i]);
       }
