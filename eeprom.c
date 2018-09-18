@@ -72,7 +72,10 @@ static uint8_t array_default_values [EEPROM_BYTES_STORED] = {
     DEFAULT_VALUE_OFFROAD_MODE_ENABLED_ON_STARTUP,
     DEFAULT_VALUE_OFFROAD_SPEED_LIMIT,
     DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED,
-    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25
+    DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25,
+    DEFAULT_VALUE_ODOMETER_X10,
+    DEFAULT_VALUE_ODOMETER_X10,
+    DEFAULT_VALUE_ODOMETER_X10
   };
 
 static void eeprom_write_array (uint8_t *array, uint8_t ui8_len);
@@ -223,6 +226,13 @@ static void eeprom_read_values_to_variables (void)
   p_configuration_variables->ui8_offroad_speed_limit = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT);
   p_configuration_variables->ui8_offroad_power_limit_enabled = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED);
   p_configuration_variables->ui8_offroad_power_limit_div25 = FLASH_ReadByte (ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25);
+
+  ui32_temp = FLASH_ReadByte (ADDRESS_ODOMETER_X10_0);
+  ui8_temp = FLASH_ReadByte (ADDRESS_ODOMETER_X10_1);
+  ui32_temp += (((uint32_t) ui8_temp << 8) & 0xff00);
+  ui8_temp = FLASH_ReadByte (ADDRESS_ODOMETER_X10_2);
+  ui32_temp += (((uint32_t) ui8_temp << 16) & 0xff0000);
+  p_configuration_variables->ui32_odometer_x10 = ui32_temp;
 }
 
 void eeprom_write_variables (void)
@@ -297,6 +307,10 @@ static void variables_to_array (uint8_t *ui8_array)
   ui8_array [56] = p_configuration_variables->ui8_offroad_speed_limit;
   ui8_array [57] = p_configuration_variables->ui8_offroad_power_limit_enabled;
   ui8_array [58] = p_configuration_variables->ui8_offroad_power_limit_div25;
+
+  ui8_array [59] = p_configuration_variables->ui32_odometer_x10 & 255;
+  ui8_array [60] = (p_configuration_variables->ui32_odometer_x10 >> 8) & 255;
+  ui8_array [61] = (p_configuration_variables->ui32_odometer_x10 >> 16) & 255;
 }
 
 static void eeprom_write_array (uint8_t *array, uint8_t ui8_len)

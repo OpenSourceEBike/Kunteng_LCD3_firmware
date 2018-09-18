@@ -73,7 +73,10 @@
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT                           56 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED                   57 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25                     58 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                                                 59
+#define ADDRESS_ODOMETER_X10_0                                              59 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_X10_1                                              60 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_X10_2                                              61 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                                                 62
 
 void eeprom_init (void);
 void eeprom_init_variables (void);
