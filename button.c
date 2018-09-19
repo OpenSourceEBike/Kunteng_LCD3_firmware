@@ -128,25 +128,36 @@ void clock_button (void)
           !get_button_onoff_long_click_event () &&
           get_button_onoff_state ())
         {
+          ui8_onoff_button_state_counter = 0;
           ui8_onoff_button_state = 1;
         }
     break;
 
     case 1:
-      // wait for button release; event click
-      if (!get_button_onoff_state ())
-      {
-        ui8_onoff_button_state = 0;
-        ui8_onoff_button_state_counter = 0;
-        ui8_buttons_events |= (1 << 0);
-      }
+      ui8_onoff_button_state_counter++;
 
       // event long click
-      if (ui8_onoff_button_state_counter++ > 200) // 2 seconds
+      if (ui8_onoff_button_state_counter > 200) // 2 seconds
       {
-        ui8_onoff_button_state = 2;
-        ui8_onoff_button_state_counter = 0;
         ui8_buttons_events |= (1 << 1);
+        ui8_onoff_button_state = 2;
+      }
+
+      // if button release
+      if (!get_button_onoff_state ())
+      {
+        // let's validade if will be a quick click + long click
+        if (ui8_onoff_button_state_counter <= 80) // 0.8 second
+        {
+          ui8_onoff_button_state_counter = 0;
+          ui8_onoff_button_state = 3;
+        }
+        // event click
+        else
+        {
+          ui8_buttons_events |= (1 << 0);
+          ui8_onoff_button_state = 0;
+        }
       }
     break;
 
@@ -155,6 +166,42 @@ void clock_button (void)
       if (!get_button_onoff_state ())
       {
         ui8_onoff_button_state = 0;
+      }
+    break;
+
+    case 3:
+      ui8_onoff_button_state_counter++;
+
+      // event click
+      if (ui8_onoff_button_state_counter > 80)
+      {
+        ui8_buttons_events |= (1 << 0);
+        ui8_onoff_button_state = 0;
+      }
+
+      // wait for long click
+      if (get_button_onoff_state ())
+      {
+        ui8_onoff_button_state = 4;
+        ui8_onoff_button_state_counter = 0;
+      }
+    break;
+
+    case 4:
+      ui8_onoff_button_state_counter++;
+
+      // event long click, but this time it is: quick click + long click
+      if (ui8_onoff_button_state_counter > 125) // 1.25 seconds
+      {
+        ui8_buttons_events |= (1 << 1);
+        ui8_onoff_button_state = 2;
+      }
+
+      // button release
+      if (!get_button_onoff_state ())
+      {
+        ui8_onoff_button_state = 4;
+        ui8_onoff_button_state_counter = 0;
       }
     break;
 
