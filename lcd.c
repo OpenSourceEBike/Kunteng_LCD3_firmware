@@ -1004,36 +1004,35 @@ void lcd_execute_menu_config_submenu_lcd (void)
       }
     break;
 
-  // reset to defaults
-  case 3:
-    if (get_button_up_click_event ())
-    {
-      clear_button_up_click_event ();
-
-      ui8_reset_to_defaults_counter++;
-      if (ui8_reset_to_defaults_counter > 9)
+    // reset to defaults
+    case 3:
+      if (get_button_up_click_event ())
       {
-        eeprom_erase_key_value ();
-        // disables the power of LCD
-        GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
-      }
-    }
+        clear_button_up_click_event ();
 
-    if (get_button_down_click_event ())
-    {
-      clear_button_down_click_event ();
-      if (ui8_reset_to_defaults_counter > 0)
+        ui8_reset_to_defaults_counter++;
+        if (ui8_reset_to_defaults_counter > 9)
+        {
+          eeprom_erase_key_value ();
+          // disables the power of LCD
+          GPIO_WriteLow(LCD3_ONOFF_POWER__PORT, LCD3_ONOFF_POWER__PIN);
+        }
+      }
+
+      if (get_button_down_click_event ())
       {
-        ui8_reset_to_defaults_counter--;
+        clear_button_down_click_event ();
+        if (ui8_reset_to_defaults_counter > 0)
+        {
+          ui8_reset_to_defaults_counter--;
+        }
       }
-    }
 
-    if (ui8_lcd_menu_flash_state)
-    {
-      lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
-    }
-  break;
-
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
+      }
+    break;
   }
 
   lcd_print (ui8_lcd_menu_config_submenu_state, WHEEL_SPEED_FIELD, 1);
@@ -1165,7 +1164,7 @@ void lcd_execute_menu_config_submenu_various (void)
 {
   uint8_t ui8_temp;
 
-  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 3);
+  advance_on_submenu (&ui8_lcd_menu_config_submenu_state, 4);
 
   switch (ui8_lcd_menu_config_submenu_state)
   {
@@ -1228,6 +1227,36 @@ void lcd_execute_menu_config_submenu_various (void)
       if (ui8_lcd_menu_flash_state)
       {
         lcd_print (configuration_variables.ui8_pas_max_cadence, ODOMETER_FIELD, 1);
+      }
+    break;
+
+    // Reset trip distance and total trip distance
+    case 3:
+      if (get_button_up_click_event ())
+      {
+        clear_button_up_click_event ();
+
+        ui8_reset_to_defaults_counter++;
+        if (ui8_reset_to_defaults_counter > 9)
+        {
+          configuration_variables.ui32_odometer_x10 = 0;
+          configuration_variables.ui16_odometer_distance_x10 = 0;
+          ui8_reset_to_defaults_counter = 0;
+        }
+      }
+
+      if (get_button_down_click_event ())
+      {
+        clear_button_down_click_event ();
+        if (ui8_reset_to_defaults_counter > 0)
+        {
+          ui8_reset_to_defaults_counter--;
+        }
+      }
+
+      if (ui8_lcd_menu_flash_state)
+      {
+        lcd_print (ui8_reset_to_defaults_counter, ODOMETER_FIELD, 1);
       }
     break;
   }
@@ -1607,7 +1636,7 @@ void brake (void)
 
 void odometer_increase_field_state (void)
 {
-  configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 7;
+  configuration_variables.ui8_odometer_field_state = (configuration_variables.ui8_odometer_field_state + 1) % 8;
 }
 
 void odometer (void)
@@ -1624,46 +1653,43 @@ void odometer (void)
   switch (configuration_variables.ui8_odometer_field_state)
   {
     // DST Single Trip Distance OR
-    // ODO Total Trip Distance
     case 0:
-//      if (ui8_odometer_state)
-//      {
-//        lcd_print ((uint32_t) configuration_variables.ui16_odometer_distance_x10, ODOMETER_FIELD, 0);
-//        lcd_enable_dst_symbol (1);
-//        lcd_enable_km_symbol (1);
-//      }
-//      else
-//      {
-        uint32_temp = configuration_variables.ui32_odometer_x10 + ((uint32_t) configuration_variables.ui16_odometer_distance_x10);
-        lcd_print (uint32_temp, ODOMETER_FIELD, 0);
-        lcd_enable_odo_symbol (1);
-        lcd_enable_km_symbol (1);
-//      }
+      lcd_print ((uint32_t) configuration_variables.ui16_odometer_distance_x10, ODOMETER_FIELD, 0);
+//      lcd_enable_dst_symbol (1); TODO: this fails, the symbol just work wehn we set it to 1 AND speed field number is equal or higher than 10.0. Seems the 3rd digit at left is needed.
+      lcd_enable_km_symbol (1);
+    break;
+
+    // ODO Total Trip Distance
+    case 1:
+      uint32_temp = configuration_variables.ui32_odometer_x10 + ((uint32_t) configuration_variables.ui16_odometer_distance_x10);
+      lcd_print (uint32_temp, ODOMETER_FIELD, 0);
+      lcd_enable_odo_symbol (1);
+      lcd_enable_km_symbol (1);
     break;
 
     // voltage value
-    case 1:
+    case 2:
       lcd_print (ui16_battery_voltage_filtered_x10, ODOMETER_FIELD, 0);
       lcd_enable_vol_symbol (1);
     break;
 
     // current value
-    case 2:
+    case 3:
       lcd_print (ui16_battery_current_filtered_x5 << 1, ODOMETER_FIELD, 0);
     break;
 
     // Wh value
-    case 3:
+    case 4:
       lcd_print (ui32_wh_x10, ODOMETER_FIELD, 0);
     break;
 
     // pedal cadence value
-    case 4:
+    case 5:
       lcd_print (motor_controller_data.ui8_pedal_cadence, ODOMETER_FIELD, 1);
     break;
 
     // battery SOC in watts/hour
-    case 5:
+    case 6:
       if (configuration_variables.ui8_show_numeric_battery_soc & 1)
       {
         lcd_print (ui16_battery_soc_watts_hour, ODOMETER_FIELD, 1);
@@ -1675,7 +1701,7 @@ void odometer (void)
     break;
 
     // motor temperature
-    case 6:
+    case 7:
       if (configuration_variables.ui8_throttle_adc_measures_motor_temperature)
       {
         lcd_print (motor_controller_data.ui8_motor_temperature, ODOMETER_FIELD, 1);
