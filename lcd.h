@@ -37,6 +37,7 @@ typedef struct _motor_controller_data
   uint8_t ui8_foc_angle;
   uint8_t ui8_temperature_current_limiting_value;
   uint8_t ui8_motor_temperature;
+  uint32_t ui32_wheel_speed_sensor_tick_counter;
 } struct_motor_controller_data;
 
 typedef struct _configuration_variables
@@ -78,6 +79,8 @@ typedef struct _configuration_variables
   uint8_t ui8_offroad_speed_limit;
   uint8_t ui8_offroad_power_limit_enabled;
   uint8_t ui8_offroad_power_limit_div25;
+  uint16_t ui16_odometer_distance_x10;
+  uint32_t ui32_odometer_x10;
 } struct_configuration_variables;
 
 // LCD RAM has 32*8 bits

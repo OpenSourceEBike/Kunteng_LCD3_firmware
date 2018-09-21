@@ -14,11 +14,11 @@
 #define KEY                                                                 0xe3
 
 #define EEPROM_BASE_ADDRESS                                                 0x4000
-#define ADDRESS_KEY 				                                        0 + EEPROM_BASE_ADDRESS
-#define ADDRESS_ASSIST_LEVEL 			                                    1 + EEPROM_BASE_ADDRESS
-#define ADDRESS_WHEEL_PERIMETER_0	                                        2 + EEPROM_BASE_ADDRESS
+#define ADDRESS_KEY                                                         0 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ASSIST_LEVEL                                                1 + EEPROM_BASE_ADDRESS
+#define ADDRESS_WHEEL_PERIMETER_0                                           2 + EEPROM_BASE_ADDRESS
 #define ADDRESS_WHEEL_PERIMETER_1                                           3 + EEPROM_BASE_ADDRESS
-#define ADDRESS_MAX_WHEEL_SPEED	 	                                        4 + EEPROM_BASE_ADDRESS
+#define ADDRESS_MAX_WHEEL_SPEED                                             4 + EEPROM_BASE_ADDRESS
 #define ADDRESS_UNITS_TYPE                                                  5 + EEPROM_BASE_ADDRESS
 #define ADDRESS_HW_X10_OFFSET_0                                             6 + EEPROM_BASE_ADDRESS
 #define ADDRESS_HW_X10_OFFSET_1                                             7 + EEPROM_BASE_ADDRESS
@@ -73,7 +73,10 @@
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_SPEED_LIMIT                           56 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_ENABLED                   57 + EEPROM_BASE_ADDRESS
 #define ADDRESS_DEFAULT_VALUE_OFFROAD_POWER_LIMIT_DIV25                     58 + EEPROM_BASE_ADDRESS
-#define EEPROM_BYTES_STORED                                                 59
+#define ADDRESS_ODOMETER_X10_0                                              59 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_X10_1                                              60 + EEPROM_BASE_ADDRESS
+#define ADDRESS_ODOMETER_X10_2                                              61 + EEPROM_BASE_ADDRESS
+#define EEPROM_BYTES_STORED                                                 62
 
 void eeprom_init (void);
 void eeprom_init_variables (void);
